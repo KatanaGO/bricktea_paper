@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint Messenger</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Подключаем SDK Telegram -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app">
+        <h1>Рисуем вместе!</h1>
+        <div class="controls">
+            <label>Цвет: <input type="color" id="colorPicker" value="#000000"></label>
+            <label>Размер: <input type="range" id="brushSize" min="1" max="50" value="5"></label>
+            <button id="clearBtn">Очистить</button>
+        </div>
+        <!-- Холст - место, где мы будем рисовать -->
+        <canvas id="paintCanvas"></canvas>
+    </div>
+    <!-- Подключаем наш JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>s
