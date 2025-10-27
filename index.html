@@ -15,6 +15,24 @@
             <label>Цвет: <input type="color" id="colorPicker" value="#000000"></label>
             <label>Размер: <input type="range" id="brushSize" min="1" max="50" value="5"></label>
             <button id="clearBtn">Очистить</button>
+            <div class="tools">
+    <button id="brushBtn" class="tool-btn active">Кисть</button>
+    <button id="lineBtn" class="tool-btn">Линия</button>
+    <button id="rectBtn" class="tool-btn">Прямоугольник</button>
+    <button id="circleBtn" class="tool-btn">Круг</button>
+    <button id="textBtn" class="tool-btn">Текст</button>
+    <button id="eraserBtn" class="tool-btn">Ластик</button>
+</div>
+
+<div class="brush-settings">
+    <label>Тип кисти:
+        <select id="brushType">
+            <option value="round">Круглая</option>
+            <option value="square">Квадратная</option>
+            <option value="dashed">Пунктир</option>
+        </select>
+    </label>
+</div>
         </div>
         <!-- Холст - место, где мы будем рисовать -->
         <canvas id="paintCanvas"></canvas>
