@@ -29,8 +29,14 @@ let collabActive = false;
 let panelsState = {
     layers: false,
     templates: false,
-    collab: false
+    collab: false,
+    background: false,
+    mobileMenu: false
 };
+
+// Определение устройства
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isTelegram = !!window.Telegram.WebApp;
 
 // Класс слоя
 class Layer {
@@ -46,8 +52,15 @@ class Layer {
     }
 
     resize() {
-        this.canvas.width = canvas.width;
-        this.canvas.height = canvas.height;
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        this.canvas.width = Math.floor(rect.width * dpr);
+        this.canvas.height = Math.floor(rect.height * dpr);
+        
+        this.ctx.scale(dpr, dpr);
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
     }
 
     clear() {
@@ -59,12 +72,53 @@ class Layer {
         
         ctx.globalAlpha = this.opacity;
         ctx.globalCompositeOperation = this.blendMode;
-        ctx.drawImage(this.canvas, 0, 0);
+        ctx.drawImage(this.canvas, 0, 0, canvas.width, canvas.height);
         
         // Сброс настроек
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
     }
+}
+
+// Безопасные вызовы Telegram API
+function safeTelegramCall(method, ...args) {
+    try {
+        if (tg && tg[method]) {
+            if (typeof tg[method] === 'function') {
+                return tg[method](...args);
+            }
+        }
+    } catch (error) {
+        console.warn(`Telegram ${method} error:`, error);
+    }
+    return null;
+}
+
+// Утилитарные функции
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function showNotification(message, duration = 3000) {
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    
+    notificationText.textContent = message;
+    notification.classList.remove('hide');
+    notification.classList.add('show');
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        notification.classList.add('hide');
+    }, duration);
 }
 
 // Инициализация приложения
@@ -76,9 +130,15 @@ function initializeApp() {
     console.log('🚀 Инициализация Paint Messenger...');
     
     // Инициализация Telegram
-    tg.ready();
-    tg.expand();
-    tg.enableClosingConfirmation();
+    safeTelegramCall('ready');
+    safeTelegramCall('expand');
+    safeTelegramCall('enableClosingConfirmation');
+    
+    // Настройка viewport для Telegram
+    if (isTelegram) {
+        document.body.classList.add('telegram-fullscreen');
+        setupTelegramViewport();
+    }
     
     // Инициализация элементов
     initializeCanvas();
@@ -87,6 +147,7 @@ function initializeApp() {
     initializePanels();
     initializeSaveFunctions();
     initializeCollaboration();
+    initializeMobileInterface();
     
     // Установка обработчиков событий
     setupEventListeners();
@@ -94,37 +155,113 @@ function initializeApp() {
     // Применение темы Telegram
     applyTelegramTheme();
     
-    console.log('✅ Приложение инициализировано');
+    console.log('✅ Приложение инициализировано для', isMobile ? 'мобильного' : 'десктопного', 'устройства');
+    
+    // Показать уведомление о готовности
+    setTimeout(() => {
+        showNotification('Paint Messenger готов к работе! 🎨');
+    }, 500);
+}
+
+function setupTelegramViewport() {
+    // Корректировка viewport для Telegram
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+    }
+    
+    // Обработка изменения размера в Telegram
+    window.addEventListener('resize', debounce(() => {
+        resizeCanvas();
+        safeTelegramCall('expand');
+    }, 250));
 }
 
 function initializeCanvas() {
     canvas = document.getElementById('paintCanvas');
     ctx = canvas.getContext('2d');
-    resizeCanvas();
+    
+    // Улучшенная инициализация canvas
+    setupCanvas();
     
     // Обработчик изменения размера окна
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', debounce(resizeCanvas, 100));
+    
+    // Инициализация размеров
+    setTimeout(resizeCanvas, 100);
 }
 
-function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
+function setupCanvas() {
+    const container = canvas.parentElement;
+    const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    // Установка размеров canvas
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
     
     // Масштабирование контекста
     ctx.scale(dpr, dpr);
     
-    // Обновление стилей
+    // Установка CSS размеров
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
     
-    // Перерисовка слоев
-    layers.forEach(layer => layer.resize());
-    redrawCanvas();
+    // Настройка сглаживания
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     
-    console.log('📐 Холст переразмерен:', canvas.width, canvas.height);
+    console.log('🎨 Canvas инициализирован:', canvas.width, canvas.height, 'DPR:', dpr);
+}
+
+function resizeCanvas() {
+    console.log('📐 Изменение размера canvas...');
+    
+    // Сохраняем текущее содержимое
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    // Переинициализация canvas
+    setupCanvas();
+    
+    // Восстанавливаем содержимое
+    ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+    
+    // Обновление слоев
+    layers.forEach(layer => {
+        const layerTempCanvas = document.createElement('canvas');
+        const layerTempCtx = layerTempCanvas.getContext('2d');
+        layerTempCanvas.width = layer.canvas.width;
+        layerTempCanvas.height = layer.canvas.height;
+        layerTempCtx.drawImage(layer.canvas, 0, 0);
+        
+        layer.resize();
+        layer.ctx.drawImage(layerTempCanvas, 0, 0, layer.canvas.width, layer.canvas.height);
+    });
+    
+    redrawCanvas();
+}
+
+function initializeMobileInterface() {
+    if (!isMobile) return;
+    
+    console.log('📱 Инициализация мобильного интерфейса...');
+    
+    // Скрываем десктопные элементы
+    document.querySelectorAll('.desktop-only').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Показываем мобильные элементы
+    document.querySelectorAll('.mobile-toolbar, .mobile-actions').forEach(el => {
+        el.style.display = 'flex';
+    });
+    
+    // Обновляем отображение размера кисти
+    updateBrushSizeDisplay();
 }
 
 function initializeLayers() {
@@ -134,57 +271,53 @@ function initializeLayers() {
     activeLayerIndex = 0;
     
     updateLayersUI();
-    console.log('📚 Система слоев инициализирована');
 }
 
 function initializeTools() {
-    // Настройка начальных параметров кисти
     updateBrushSettings();
-    
-    console.log('🛠️ Инструменты инициализированы');
 }
 
 function initializePanels() {
-    // Скрытие всех панелей при старте
     hideAllPanels();
-    
-    console.log('📦 Панели инициализированы');
 }
 
 function initializeSaveFunctions() {
     // Инициализация уже выполнена через обработчики событий
-    console.log('💾 Функции сохранения инициализированы');
 }
 
 function initializeCollaboration() {
-    try {
-        peer = new Peer({
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
-        });
-        
-        peer.on('open', function(id) {
-            console.log('🔗 Peer соединение установлено, ID:', id);
-            document.getElementById('sessionId').value = id;
-            updateCollabStatus('Готов к подключению');
-        });
-        
-        peer.on('connection', function(conn) {
-            setupConnection(conn);
-        });
-        
-        peer.on('error', function(err) {
-            console.error('❌ Ошибка Peer:', err);
-            updateCollabStatus('Ошибка соединения');
-        });
-        
-    } catch (error) {
-        console.error('❌ Не удалось инициализировать совместную работу:', error);
-        updateCollabStatus('Недоступно');
+    if (!isMobile) { // Совместная работа только на десктопе для стабильности
+        try {
+            peer = new Peer({
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:global.stun.twilio.com:3478' }
+                    ]
+                }
+            });
+            
+            peer.on('open', function(id) {
+                console.log('🔗 Peer соединение установлено, ID:', id);
+                document.getElementById('sessionId').value = id;
+                updateCollabStatus('Готов к подключению');
+            });
+            
+            peer.on('connection', function(conn) {
+                setupConnection(conn);
+            });
+            
+            peer.on('error', function(err) {
+                console.error('❌ Ошибка Peer:', err);
+                updateCollabStatus('Ошибка соединения');
+            });
+            
+        } catch (error) {
+            console.error('❌ Не удалось инициализировать совместную работу:', error);
+            updateCollabStatus('Недоступно');
+        }
+    } else {
+        document.getElementById('collabStatus').innerHTML = '<span class="status-icon">📱</span><span class="status-text">Только на компьютере</span>';
     }
 }
 
@@ -200,6 +333,29 @@ function togglePanel(panelName) {
         panel.style.display = 'block';
         panelsState[panelName] = true;
     }
+    
+    // Вибрация на мобильных
+    if (isMobile) {
+        safeTelegramCall('HapticFeedback.impactOccurred', 'light');
+    }
+}
+
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    if (panelsState.mobileMenu) {
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        panelsState.mobileMenu = false;
+    } else {
+        hideAllPanels();
+        menu.classList.add('active');
+        overlay.classList.add('active');
+        panelsState.mobileMenu = true;
+    }
+    
+    safeTelegramCall('HapticFeedback.impactOccurred', 'light');
 }
 
 function hideAllPanels() {
@@ -207,9 +363,35 @@ function hideAllPanels() {
         panel.style.display = 'none';
     });
     
+    document.getElementById('mobileMenu').classList.remove('active');
+    document.getElementById('mobileOverlay').classList.remove('active');
+    
     Object.keys(panelsState).forEach(key => {
         panelsState[key] = false;
     });
+}
+
+// Улучшенная система координат для мобильных устройств
+function getCoordinates(e) {
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.type.includes('touch')) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+    
+    // Корректировка координат с учетом масштаба и смещения
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    
+    return { x, y };
 }
 
 // Система слоев
@@ -253,16 +435,13 @@ function addNewLayer() {
     layers.push(newLayer);
     setActiveLayer(layers.length - 1);
     
-    tg.HapticFeedback.impactOccurred('light');
+    showNotification('Новый слой создан');
+    safeTelegramCall('HapticFeedback.impactOccurred', 'light');
 }
 
 function mergeLayers() {
     if (layers.length <= 1) {
-        tg.showPopup({
-            title: 'Информация',
-            message: 'Нечего объединять',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Нечего объединять');
         return;
     }
     
@@ -288,12 +467,8 @@ function mergeLayers() {
     layers = [mergedLayer];
     setActiveLayer(0);
     
-    tg.HapticFeedback.impactOccurred('medium');
-    tg.showPopup({
-        title: 'Успех',
-        message: 'Слои объединены',
-        buttons: [{ type: 'ok' }]
-    });
+    showNotification('Слои объединены');
+    safeTelegramCall('HapticFeedback.impactOccurred', 'medium');
 }
 
 function redrawCanvas() {
@@ -330,6 +505,16 @@ function updateBrushSettings() {
         default:
             layerCtx.setLineDash([]);
     }
+    
+    updateBrushSizeDisplay();
+}
+
+function updateBrushSizeDisplay() {
+    const brushSize = document.getElementById('brushSize').value;
+    const brushSizeValue = document.getElementById('brushSizeValue');
+    if (brushSizeValue) {
+        brushSizeValue.textContent = brushSize;
+    }
 }
 
 function selectTool(tool) {
@@ -339,34 +524,35 @@ function selectTool(tool) {
     document.querySelectorAll('.tool-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.getElementById(tool + 'Btn').classList.add('active');
+    
+    // Активируем соответствующую кнопку
+    const activeBtn = document.getElementById(tool + 'Btn') || 
+                     document.getElementById('mobile' + tool.charAt(0).toUpperCase() + tool.slice(1));
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
     
     updateBrushSettings();
     
-    tg.HapticFeedback.selectionChangedOccurred();
+    safeTelegramCall('HapticFeedback.selectionChangedOccurred');
+    showNotification(`Инструмент: ${getToolName(tool)}`);
+}
+
+function getToolName(tool) {
+    const toolNames = {
+        'brush': 'Кисть',
+        'line': 'Линия',
+        'rect': 'Прямоугольник',
+        'circle': 'Круг',
+        'text': 'Текст',
+        'eraser': 'Ластик'
+    };
+    return toolNames[tool] || tool;
 }
 
 // Обработчики событий рисования
-function getCoordinates(e) {
-    const rect = canvas.getBoundingClientRect();
-    let clientX, clientY;
-    
-    if (e.type.includes('touch')) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-    }
-    
-    return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
-}
-
 function startDrawing(e) {
-    if (panelsState.layers || panelsState.templates || panelsState.collab) return;
+    if (panelsState.layers || panelsState.templates || panelsState.collab || panelsState.mobileMenu) return;
     
     const activeLayer = layers[activeLayerIndex];
     const layerCtx = activeLayer.ctx;
@@ -461,7 +647,6 @@ function stopDrawing() {
 function saveState() {
     // Сохраняем состояние всех слоев
     const state = layers.map(layer => ({
-        ...layer,
         canvasData: layer.canvas.toDataURL()
     }));
     
@@ -494,7 +679,10 @@ function undo() {
     if (historyIndex > 0) {
         historyIndex--;
         restoreState(history[historyIndex]);
-        tg.HapticFeedback.impactOccurred('light');
+        showNotification('Действие отменено');
+        safeTelegramCall('HapticFeedback.impactOccurred', 'light');
+    } else {
+        showNotification('Нечего отменять');
     }
 }
 
@@ -502,7 +690,10 @@ function redo() {
     if (historyIndex < history.length - 1) {
         historyIndex++;
         restoreState(history[historyIndex]);
-        tg.HapticFeedback.impactOccurred('light');
+        showNotification('Действие повторено');
+        safeTelegramCall('HapticFeedback.impactOccurred', 'light');
+    } else {
+        showNotification('Нечего повторять');
     }
 }
 
@@ -513,12 +704,14 @@ function addText(x, y) {
         const activeLayer = layers[activeLayerIndex];
         const layerCtx = activeLayer.ctx;
         
-        layerCtx.font = `${document.getElementById('brushSize').value * 5}px Arial`;
+        layerCtx.font = `bold ${document.getElementById('brushSize').value * 4}px Arial`;
         layerCtx.fillStyle = document.getElementById('colorPicker').value;
+        layerCtx.textBaseline = 'middle';
         layerCtx.fillText(text, x, y);
         
         redrawCanvas();
         saveState();
+        showNotification('Текст добавлен');
     }
 }
 
@@ -528,26 +721,24 @@ function setBackground(type) {
     
     // Сохраняем текущее содержимое
     const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
     
     // Копируем текущее изображение
     layers.forEach(layer => {
-        if (layer.visible) {
+        if (layer.visible && layer !== layers[0]) {
             tempCtx.drawImage(layer.canvas, 0, 0);
         }
     });
     
-    // Очищаем все слои
-    layers.forEach(layer => layer.clear());
-    
-    // Устанавливаем фон на базовый слой
+    // Очищаем базовый слой и устанавливаем фон
     const baseLayer = layers[0];
-    baseLayer.ctx.fillStyle = '#FFFFFF';
+    baseLayer.clear();
     
     switch(type) {
         case 'white':
+            baseLayer.ctx.fillStyle = '#FFFFFF';
             baseLayer.ctx.fillRect(0, 0, canvas.width, canvas.height);
             break;
         case 'grid':
@@ -568,6 +759,20 @@ function setBackground(type) {
     baseLayer.ctx.drawImage(tempCanvas, 0, 0);
     redrawCanvas();
     saveState();
+    
+    showNotification(`Фон установлен: ${getBackgroundName(type)}`);
+}
+
+function getBackgroundName(type) {
+    const names = {
+        'transparent': 'Прозрачный',
+        'white': 'Белый',
+        'grid': 'Сетка',
+        'lined': 'Линовка',
+        'graph': 'Миллиметровка',
+        'custom': 'Свой фон'
+    };
+    return names[type] || type;
 }
 
 function drawGridBackground(context) {
@@ -637,6 +842,49 @@ function drawGraphBackground(context) {
     }
 }
 
+function loadCustomBackground() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Сохраняем текущее содержимое
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                
+                layers.forEach(layer => {
+                    if (layer.visible && layer !== layers[0]) {
+                        tempCtx.drawImage(layer.canvas, 0, 0);
+                    }
+                });
+                
+                // Очищаем и устанавливаем фон
+                layers[0].clear();
+                layers[0].ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                layers[0].ctx.drawImage(tempCanvas, 0, 0);
+                
+                redrawCanvas();
+                saveState();
+                currentBackground = 'custom';
+                
+                showNotification('Свой фон установлен');
+                hideAllPanels();
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
 // Шаблоны
 const templates = {
     comic: function() {
@@ -656,6 +904,7 @@ const templates = {
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "Комикс" применен');
     },
     
     storyboard: function() {
@@ -680,6 +929,7 @@ const templates = {
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "Раскадровка" применен');
     },
     
     mindmap: function() {
@@ -695,10 +945,12 @@ const templates = {
         activeLayer.ctx.fillStyle = '#FFFFFF';
         activeLayer.ctx.font = 'bold 16px Arial';
         activeLayer.ctx.textAlign = 'center';
-        activeLayer.ctx.fillText('Тема', canvas.width / 2, canvas.height / 2 + 5);
+        activeLayer.ctx.textBaseline = 'middle';
+        activeLayer.ctx.fillText('Тема', canvas.width / 2, canvas.height / 2);
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "Ментальная карта" применен');
     },
     
     ui: function() {
@@ -715,6 +967,7 @@ const templates = {
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "UI макет" применен');
     },
     
     flowchart: function() {
@@ -727,10 +980,14 @@ const templates = {
         // Пример элементов блок-схемы
         const startY = 50;
         activeLayer.ctx.strokeRect(canvas.width/2 - 40, startY, 80, 40);
-        activeLayer.ctx.fillText('Начало', canvas.width/2, startY + 25);
+        activeLayer.ctx.font = '14px Arial';
+        activeLayer.ctx.textAlign = 'center';
+        activeLayer.ctx.textBaseline = 'middle';
+        activeLayer.ctx.fillText('Начало', canvas.width/2, startY + 20);
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "Блок-схема" применен');
     },
     
     sketch: function() {
@@ -757,6 +1014,7 @@ const templates = {
         
         redrawCanvas();
         saveState();
+        showNotification('Шаблон "Эскиз" применен');
     }
 };
 
@@ -770,21 +1028,20 @@ function setupConnection(conn) {
     
     conn.on('open', function() {
         updateCollabStatus(`Участников: ${connections.length + 1}`);
-        tg.showPopup({
-            title: 'Новый участник',
-            message: 'Кто-то присоединился к сессии',
-            buttons: [{ type: 'ok' }]
-        });
+        updateUsersList();
+        showNotification('Новый участник присоединился');
     });
     
     conn.on('close', function() {
         connections = connections.filter(c => c !== conn);
         updateUsersList();
         updateCollabStatus(`Участников: ${connections.length + 1}`);
+        showNotification('Участник покинул сессию');
     });
     
     conn.on('error', function(err) {
         console.error('Ошибка соединения:', err);
+        showNotification('Ошибка соединения с участником');
     });
     
     updateUsersList();
@@ -798,9 +1055,6 @@ function handleIncomingData(data) {
             break;
         case 'clear':
             clearCanvas();
-            break;
-        case 'layer_data':
-            restoreLayerData(data);
             break;
     }
 }
@@ -844,43 +1098,26 @@ function broadcastDrawingData() {
 
 function startCollaboration() {
     if (!peer) {
-        tg.showPopup({
-            title: 'Ошибка',
-            message: 'Совместная работа недоступна',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Совместная работа недоступна');
         return;
     }
     
     currentSession = peer.id;
     collabActive = true;
     
-    tg.showPopup({
-        title: 'Сессия создана',
-        message: `ID: ${peer.id}\nПоделитесь этим ID с друзьями`,
-        buttons: [{ type: 'ok' }]
-    });
-    
+    showNotification('Сессия создана! Поделитесь ID с друзьями');
     updateCollabStatus('Ожидание участников...');
 }
 
 function joinCollaboration() {
-    const sessionId = document.getElementById('sessionId').value.trim();
+    const sessionId = document.getElementById('joinSessionId').value.trim();
     if (!sessionId) {
-        tg.showPopup({
-            title: 'Ошибка',
-            message: 'Введите ID сессии',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Введите ID сессии');
         return;
     }
     
     if (!peer) {
-        tg.showPopup({
-            title: 'Ошибка',
-            message: 'Совместная работа недоступна',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Совместная работа недоступна');
         return;
     }
     
@@ -892,50 +1129,68 @@ function joinCollaboration() {
             currentSession = sessionId;
             collabActive = true;
             updateCollabStatus('Подключено к сессии');
-            
-            tg.showPopup({
-                title: 'Успех',
-                message: 'Вы присоединились к сессии',
-                buttons: [{ type: 'ok' }]
-            });
+            showNotification('Вы присоединились к сессии');
+            hideAllPanels();
         });
         
         conn.on('error', function(err) {
-            tg.showPopup({
-                title: 'Ошибка',
-                message: 'Не удалось подключиться',
-                buttons: [{ type: 'ok' }]
-            });
+            showNotification('Не удалось подключиться к сессии');
         });
         
     } catch (error) {
         console.error('Ошибка подключения:', error);
-        tg.showPopup({
-            title: 'Ошибка',
-            message: 'Неверный ID сессии',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Неверный ID сессии');
     }
 }
 
 function updateUsersList() {
     const usersList = document.getElementById('usersList');
+    if (!usersList) return;
+    
     usersList.innerHTML = `
-        <div>👤 Вы (владелец)</div>
-        ${connections.map((conn, index) => `<div>👤 Участник ${index + 1}</div>`).join('')}
+        <div class="user-item host">
+            <span class="user-icon">👤</span>
+            <span class="user-name">Вы (владелец)</span>
+        </div>
+        ${connections.map((conn, index) => `
+            <div class="user-item">
+                <span class="user-icon">👤</span>
+                <span class="user-name">Участник ${index + 1}</span>
+            </div>
+        `).join('')}
     `;
 }
 
 function updateCollabStatus(status) {
     const statusElement = document.getElementById('collabStatus');
-    statusElement.textContent = status;
+    if (!statusElement) return;
+    
+    const statusText = statusElement.querySelector('.status-text');
+    const statusIcon = statusElement.querySelector('.status-icon');
+    
+    if (statusText) statusText.textContent = status;
+    
+    statusElement.className = 'collab-status';
     
     if (status.includes('Ошибка') || status.includes('Недоступно')) {
-        statusElement.className = 'collab-status disconnected';
+        statusElement.classList.add('disconnected');
+        if (statusIcon) statusIcon.textContent = '🔴';
     } else if (status.includes('Подключено') || status.includes('Участников')) {
-        statusElement.className = 'collab-status connected';
+        statusElement.classList.add('connected');
+        if (statusIcon) statusIcon.textContent = '🟢';
     } else {
-        statusElement.className = 'collab-status';
+        if (statusIcon) statusIcon.textContent = '🟡';
+    }
+}
+
+function copySessionId() {
+    const sessionId = document.getElementById('sessionId').value;
+    if (sessionId) {
+        navigator.clipboard.writeText(sessionId).then(() => {
+            showNotification('ID сессии скопирован');
+        }).catch(() => {
+            showNotification('Не удалось скопировать ID');
+        });
     }
 }
 
@@ -946,7 +1201,8 @@ function saveAsPNG() {
     link.href = canvas.toDataURL('image/png');
     link.click();
     
-    tg.HapticFeedback.notificationOccurred('success');
+    showNotification('Рисунок сохранен как PNG');
+    safeTelegramCall('HapticFeedback.notificationOccurred', 'success');
 }
 
 function saveAsJPG() {
@@ -955,7 +1211,8 @@ function saveAsJPG() {
     link.href = canvas.toDataURL('image/jpeg', 0.92);
     link.click();
     
-    tg.HapticFeedback.notificationOccurred('success');
+    showNotification('Рисунок сохранен как JPG');
+    safeTelegramCall('HapticFeedback.notificationOccurred', 'success');
 }
 
 async function copyToClipboard() {
@@ -965,20 +1222,11 @@ async function copyToClipboard() {
             new ClipboardItem({ 'image/png': blob })
         ]);
         
-        tg.showPopup({
-            title: 'Успех',
-            message: 'Рисунок скопирован в буфер обмена',
-            buttons: [{ type: 'ok' }]
-        });
-        
-        tg.HapticFeedback.notificationOccurred('success');
+        showNotification('Рисунок скопирован в буфер обмена');
+        safeTelegramCall('HapticFeedback.notificationOccurred', 'success');
     } catch (err) {
         console.error('Ошибка копирования:', err);
-        tg.showPopup({
-            title: 'Ошибка',
-            message: 'Не удалось скопировать в буфер обмена',
-            buttons: [{ type: 'ok' }]
-        });
+        showNotification('Не удалось скопировать в буфер обмена');
     }
 }
 
@@ -1013,131 +1261,164 @@ function clearCanvas() {
             });
         }
         
-        tg.HapticFeedback.impactOccurred('heavy');
+        showNotification('Холст очищен');
+        safeTelegramCall('HapticFeedback.impactOccurred', 'heavy');
     }
 }
 
 // Вспомогательные функции
 function applyTelegramTheme() {
-    document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
-    document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
-    document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
-    document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-    document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
+    try {
+        if (tg && tg.themeParams) {
+            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
+        }
+    } catch (error) {
+        console.warn('Ошибка применения темы Telegram:', error);
+    }
 }
 
-function loadCustomBackground() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                // Сохраняем текущее содержимое
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                layers.forEach(layer => {
-                    if (layer.visible) {
-                        tempCtx.drawImage(layer.canvas, 0, 0);
-                    }
-                });
-                
-                // Очищаем и устанавливаем фон
-                layers.forEach(layer => layer.clear());
-                layers[0].ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                layers[0].ctx.drawImage(tempCanvas, 0, 0);
-                
-                redrawCanvas();
-                saveState();
-                currentBackground = 'custom';
-                
-                tg.showPopup({
-                    title: 'Успех',
-                    message: 'Фон установлен',
-                    buttons: [{ type: 'ok' }]
-                });
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
+function handleMobileMenuAction(action) {
+    switch(action) {
+        case 'brush':
+        case 'line':
+        case 'rect':
+        case 'circle':
+        case 'text':
+        case 'eraser':
+            selectTool(action);
+            break;
+        case 'layers':
+            togglePanel('layers');
+            break;
+        case 'templates':
+            togglePanel('templates');
+            break;
+        case 'background':
+            togglePanel('background');
+            break;
+        case 'collab':
+            if (!isMobile) {
+                togglePanel('collab');
+            } else {
+                showNotification('Совместная работа доступна только на компьютере');
+            }
+            break;
+        case 'savePNG':
+            saveAsPNG();
+            break;
+        case 'saveJPG':
+            saveAsJPG();
+            break;
+        case 'copyClipboard':
+            copyToClipboard();
+            break;
+        case 'share':
+            shareDrawing();
+            break;
+    }
 }
 
 // Настройка обработчиков событий
 function setupEventListeners() {
-    // Обработчики инструментов
-    document.getElementById('brushBtn').addEventListener('click', () => selectTool('brush'));
-    document.getElementById('lineBtn').addEventListener('click', () => selectTool('line'));
-    document.getElementById('rectBtn').addEventListener('click', () => selectTool('rect'));
-    document.getElementById('circleBtn').addEventListener('click', () => selectTool('circle'));
-    document.getElementById('textBtn').addEventListener('click', () => selectTool('text'));
-    document.getElementById('eraserBtn').addEventListener('click', () => selectTool('eraser'));
+    setupToolEventListeners();
+    setupBrushEventListeners();
+    setupHistoryEventListeners();
+    setupPanelEventListeners();
+    setupBackgroundEventListeners();
+    setupTemplateEventListeners();
+    setupCollaborationEventListeners();
+    setupSaveEventListeners();
+    setupCanvasEventListeners();
+    setupMobileEventListeners();
+    setupGlobalEventListeners();
+}
+
+function setupToolEventListeners() {
+    // Десктопные инструменты
+    document.getElementById('brushBtn')?.addEventListener('click', () => selectTool('brush'));
+    document.getElementById('lineBtn')?.addEventListener('click', () => selectTool('line'));
+    document.getElementById('rectBtn')?.addEventListener('click', () => selectTool('rect'));
+    document.getElementById('circleBtn')?.addEventListener('click', () => selectTool('circle'));
+    document.getElementById('textBtn')?.addEventListener('click', () => selectTool('text'));
+    document.getElementById('eraserBtn')?.addEventListener('click', () => selectTool('eraser'));
+}
+
+function setupBrushEventListeners() {
+    document.getElementById('colorPicker')?.addEventListener('input', updateBrushSettings);
+    document.getElementById('brushSize')?.addEventListener('input', updateBrushSettings);
+    document.getElementById('brushType')?.addEventListener('change', updateBrushSettings);
+}
+
+function setupHistoryEventListeners() {
+    document.getElementById('undoBtn')?.addEventListener('click', undo);
+    document.getElementById('redoBtn')?.addEventListener('click', redo);
+    document.getElementById('clearBtn')?.addEventListener('click', clearCanvas);
+}
+
+function setupPanelEventListeners() {
+    // Десктопные панели
+    document.getElementById('toggleLayers')?.addEventListener('click', () => togglePanel('layers'));
+    document.getElementById('toggleTemplates')?.addEventListener('click', () => togglePanel('templates'));
+    document.getElementById('settingsBtn')?.addEventListener('click', () => togglePanel('background'));
     
-    // Обработчики настроек кисти
-    document.getElementById('colorPicker').addEventListener('input', updateBrushSettings);
-    document.getElementById('brushSize').addEventListener('input', updateBrushSettings);
-    document.getElementById('brushType').addEventListener('change', updateBrushSettings);
-    
-    // Обработчики истории
-    document.getElementById('undoBtn').addEventListener('click', undo);
-    document.getElementById('redoBtn').addEventListener('click', redo);
-    document.getElementById('clearBtn').addEventListener('click', clearCanvas);
-    
-    // Обработчики панелей
-    document.getElementById('toggleLayers').addEventListener('click', () => togglePanel('layers'));
-    document.getElementById('toggleTemplates').addEventListener('click', () => togglePanel('templates'));
-    document.getElementById('toggleCollab').addEventListener('click', () => togglePanel('collab'));
-    
-    document.getElementById('closeLayers').addEventListener('click', () => togglePanel('layers'));
-    document.getElementById('closeTemplates').addEventListener('click', () => togglePanel('templates'));
-    document.getElementById('closeCollab').addEventListener('click', () => togglePanel('collab'));
-    
-    // Обработчики слоев
-    document.getElementById('addLayer').addEventListener('click', addNewLayer);
-    document.getElementById('mergeLayers').addEventListener('click', mergeLayers);
-    
-    // Обработчики фонов и шаблонов
-    document.getElementById('backgroundSelect').addEventListener('change', function() {
+    // Закрытие панелей
+    document.getElementById('closeLayers')?.addEventListener('click', () => togglePanel('layers'));
+    document.getElementById('closeTemplates')?.addEventListener('click', () => togglePanel('templates'));
+    document.getElementById('closeBackground')?.addEventListener('click', () => togglePanel('background'));
+    document.getElementById('closeCollab')?.addEventListener('click', () => togglePanel('collab'));
+}
+
+function setupBackgroundEventListeners() {
+    document.getElementById('backgroundSelect')?.addEventListener('change', function() {
         setBackground(this.value);
     });
-    document.getElementById('customBgBtn').addEventListener('click', loadCustomBackground);
     
-    // Обработчики шаблонов
+    // Обработчики для панели фонов
+    document.querySelectorAll('.background-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const background = this.getAttribute('data-background');
+            const action = this.getAttribute('data-action');
+            
+            if (action === 'custom') {
+                loadCustomBackground();
+            } else if (background) {
+                setBackground(background);
+                hideAllPanels();
+            }
+        });
+    });
+}
+
+function setupTemplateEventListeners() {
     document.querySelectorAll('.template-item').forEach(item => {
         item.addEventListener('click', function() {
             const template = this.getAttribute('data-template');
             if (templates[template]) {
                 templates[template]();
-                togglePanel('templates');
-                
-                tg.showPopup({
-                    title: 'Шаблон применен',
-                    message: `Шаблон "${this.querySelector('span').textContent}" загружен`,
-                    buttons: [{ type: 'ok' }]
-                });
+                hideAllPanels();
             }
         });
     });
-    
-    // Обработчики совместной работы
-    document.getElementById('startCollab').addEventListener('click', startCollaboration);
-    document.getElementById('joinCollab').addEventListener('click', joinCollaboration);
-    
-    // Обработчики сохранения
-    document.getElementById('savePNG').addEventListener('click', saveAsPNG);
-    document.getElementById('saveJPG').addEventListener('click', saveAsJPG);
-    document.getElementById('copyClipboard').addEventListener('click', copyToClipboard);
-    document.getElementById('shareBtn').addEventListener('click', shareDrawing);
-    
+}
+
+function setupCollaborationEventListeners() {
+    document.getElementById('startCollab')?.addEventListener('click', startCollaboration);
+    document.getElementById('joinCollab')?.addEventListener('click', joinCollaboration);
+    document.getElementById('copySessionId')?.addEventListener('click', copySessionId);
+}
+
+function setupSaveEventListeners() {
+    document.getElementById('savePNG')?.addEventListener('click', saveAsPNG);
+    document.getElementById('saveJPG')?.addEventListener('click', saveAsJPG);
+    document.getElementById('copyClipboard')?.addEventListener('click', copyToClipboard);
+    document.getElementById('shareBtn')?.addEventListener('click', shareDrawing);
+}
+
+function setupCanvasEventListeners() {
     // Обработчики событий холста
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
@@ -1150,9 +1431,49 @@ function setupEventListeners() {
     canvas.addEventListener('touchcancel', stopDrawing);
     
     // Предотвращение стандартного поведения для touch событий
-    canvas.addEventListener('touchstart', (e) => e.preventDefault());
-    canvas.addEventListener('touchmove', (e) => e.preventDefault());
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) { // Только для одного касания
+            e.preventDefault();
+        }
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+        }
+    });
+}
+
+function setupMobileEventListeners() {
+    if (!isMobile) return;
     
+    // Мобильное меню
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('closeMobileMenu')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('mobileOverlay')?.addEventListener('click', toggleMobileMenu);
+    
+    // Мобильные инструменты
+    document.getElementById('mobileBrush')?.addEventListener('click', () => selectTool('brush'));
+    document.getElementById('mobileEraser')?.addEventListener('click', () => selectTool('eraser'));
+    document.getElementById('mobileText')?.addEventListener('click', () => selectTool('text'));
+    document.getElementById('mobileShapes')?.addEventListener('click', () => togglePanel('templates'));
+    
+    // Мобильные действия
+    document.getElementById('mobileUndo')?.addEventListener('click', undo);
+    document.getElementById('mobileRedo')?.addEventListener('click', redo);
+    document.getElementById('mobileClear')?.addEventListener('click', clearCanvas);
+    document.getElementById('mobileBackground')?.addEventListener('click', () => togglePanel('background'));
+    document.getElementById('mobileSave')?.addEventListener('click', () => togglePanel('collab'));
+    
+    // Мобильное меню items
+    document.querySelectorAll('.mobile-menu-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            handleMobileMenuAction(action);
+        });
+    });
+}
+
+function setupGlobalEventListeners() {
     // Горячие клавиши
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey) {
@@ -1183,22 +1504,35 @@ function setupEventListeners() {
         if (!e.target.closest('.panel') && 
             !e.target.closest('#toggleLayers') && 
             !e.target.closest('#toggleTemplates') && 
-            !e.target.closest('#toggleCollab')) {
+            !e.target.closest('#settingsBtn') &&
+            !e.target.closest('#mobileMenuBtn')) {
             hideAllPanels();
         }
     });
+    
+    // Обработка изменения темы Telegram
+    if (tg) {
+        tg.onEvent('themeChanged', applyTelegramTheme);
+        tg.onEvent('viewportChanged', () => {
+            setTimeout(resizeCanvas, 100);
+        });
+    }
 }
 
 // Обработка ошибок
 window.addEventListener('error', function(e) {
     console.error('Глобальная ошибка:', e.error);
-    
-    tg.showPopup({
-        title: 'Произошла ошибка',
-        message: 'Приложение может работать некорректно. Попробуйте перезагрузить.',
-        buttons: [{ type: 'ok' }]
-    });
+    showNotification('Произошла ошибка. Попробуйте перезагрузить приложение.');
 });
 
-// Уведомление о готовности
-tg.showAlert('Paint Messenger готов к работе! 🎨');
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Необработанное обещание:', e.reason);
+    showNotification('Произошла ошибка. Попробуйте перезагрузить приложение.');
+});
+
+// Инициализация слоев при загрузке
+initializeLayers();
+
+// Обработчики слоев
+document.getElementById('addLayer')?.addEventListener('click', addNewLayer);
+document.getElementById('mergeLayers')?.addEventListener('click', mergeLayers);
