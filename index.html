@@ -4,243 +4,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Paint Messenger</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS будет встроен для быстрой загрузки */
+    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
     <div class="app">
-        <!-- Мобильная панель инструментов -->
-        <div class="mobile-toolbar">
-            <button id="mobileMenuBtn" class="mobile-menu-btn">☰</button>
-            <div class="mobile-tools">
-                <button id="mobileBrush" class="tool-btn active" title="Кисть">🖌️</button>
-                <button id="mobileEraser" class="tool-btn" title="Ластик">🧹</button>
-                <button id="mobileText" class="tool-btn" title="Текст">📝</button>
-                <button id="mobileShapes" class="tool-btn" title="Фигуры">⬜</button>
-            </div>
-            <button id="mobileSave" class="mobile-save-btn" title="Сохранить">💾</button>
-        </div>
-
-        <!-- Основная панель инструментов (скрыта на мобильных) -->
-        <div class="toolbar desktop-only">
-            <div class="tool-group">
-                <button id="brushBtn" class="tool-btn active" title="Кисть">🖌️</button>
-                <button id="lineBtn" class="tool-btn" title="Линия">📏</button>
-                <button id="rectBtn" class="tool-btn" title="Прямоугольник">⬜</button>
-                <button id="circleBtn" class="tool-btn" title="Круг">⭕</button>
-                <button id="textBtn" class="tool-btn" title="Текст">📝</button>
-                <button id="eraserBtn" class="tool-btn" title="Ластик">🧹</button>
+        <!-- Главная панель инструментов -->
+        <div class="main-toolbar">
+            <div class="tool-section">
+                <button class="tool-btn active" data-tool="brush" title="Кисть">🖌️</button>
+                <button class="tool-btn" data-tool="eraser" title="Ластик">🧹</button>
+                <button class="tool-btn" data-tool="text" title="Текст">📝</button>
+                <button class="tool-btn" data-tool="shapes" title="Фигуры">⬜</button>
             </div>
             
-            <div class="tool-group">
-                <label class="color-label">
-                    <span>Цвет:</span>
-                    <input type="color" id="colorPicker" value="#000000" title="Цвет">
-                </label>
-                <label class="size-label">
-                    <span>Размер:</span>
-                    <input type="range" id="brushSize" min="1" max="50" value="5" title="Размер кисти">
-                    <span id="brushSizeValue">5</span>
-                </label>
-                <label class="type-label">
-                    <span>Тип:</span>
-                    <select id="brushType" title="Тип кисти">
-                        <option value="round">Круглая</option>
-                        <option value="square">Квадратная</option>
-                        <option value="dashed">Пунктир</option>
-                    </select>
-                </label>
+            <div class="tool-section">
+                <input type="color" class="color-picker" value="#000000" title="Цвет">
+                <div class="brush-size-container">
+                    <input type="range" class="brush-size" min="1" max="30" value="3" title="Размер">
+                    <span class="size-value">3</span>
+                </div>
             </div>
 
-            <div class="tool-group">
-                <button id="undoBtn" title="Отменить">↩️</button>
-                <button id="redoBtn" title="Повторить">↪️</button>
-                <button id="clearBtn" title="Очистить">🗑️</button>
-                <button id="settingsBtn" title="Настройки">⚙️</button>
+            <div class="tool-section">
+                <button class="action-btn" data-action="undo" title="Отменить">↩️</button>
+                <button class="action-btn" data-action="redo" title="Повторить">↪️</button>
+                <button class="action-btn" data-action="clear" title="Очистить">🗑️</button>
+                <button class="action-btn" data-action="menu" title="Меню">☰</button>
             </div>
         </div>
 
-        <!-- Мобильное меню -->
-        <div id="mobileMenu" class="mobile-menu">
-            <div class="mobile-menu-header">
-                <h3>Меню</h3>
-                <button id="closeMobileMenu" class="close-btn">✕</button>
-            </div>
-            <div class="mobile-menu-content">
-                <div class="mobile-menu-section">
-                    <h4>Инструменты</h4>
-                    <button class="mobile-menu-item" data-action="brush">🖌️ Кисть</button>
-                    <button class="mobile-menu-item" data-action="line">📏 Линия</button>
-                    <button class="mobile-menu-item" data-action="rect">⬜ Прямоугольник</button>
-                    <button class="mobile-menu-item" data-action="circle">⭕ Круг</button>
-                    <button class="mobile-menu-item" data-action="text">📝 Текст</button>
-                    <button class="mobile-menu-item" data-action="eraser">🧹 Ластик</button>
+        <!-- Холст -->
+        <div class="canvas-container">
+            <canvas id="paintCanvas"></canvas>
+        </div>
+
+        <!-- Вспомогательная панель -->
+        <div class="secondary-toolbar">
+            <button class="sec-btn" data-action="save">💾 Сохранить</button>
+            <button class="sec-btn" data-action="background">🎨 Фон</button>
+            <button class="sec-btn" data-action="templates">📁 Шаблоны</button>
+        </div>
+
+        <!-- Меню -->
+        <div class="menu-overlay" id="menuOverlay">
+            <div class="menu-panel">
+                <div class="menu-header">
+                    <h3>Меню</h3>
+                    <button class="close-btn" data-action="close-menu">✕</button>
                 </div>
                 
-                <div class="mobile-menu-section">
-                    <h4>Управление</h4>
-                    <button class="mobile-menu-item" data-action="layers">📚 Слои</button>
-                    <button class="mobile-menu-item" data-action="templates">🎨 Шаблоны</button>
-                    <button class="mobile-menu-item" data-action="background">🖼️ Фон</button>
-                    <button class="mobile-menu-item" data-action="collab">👥 Совместная работа</button>
-                </div>
+                <div class="menu-content">
+                    <div class="menu-section">
+                        <h4>Инструменты</h4>
+                        <button class="menu-item" data-tool="brush">🖌️ Кисть</button>
+                        <button class="menu-item" data-tool="line">📏 Линия</button>
+                        <button class="menu-item" data-tool="rect">⬜ Прямоугольник</button>
+                        <button class="menu-item" data-tool="circle">⭕ Круг</button>
+                        <button class="menu-item" data-tool="text">📝 Текст</button>
+                        <button class="menu-item" data-tool="eraser">🧹 Ластик</button>
+                    </div>
+                    
+                    <div class="menu-section">
+                        <h4>Действия</h4>
+                        <button class="menu-item" data-action="save-png">💾 PNG</button>
+                        <button class="menu-item" data-action="save-jpg">🖼️ JPG</button>
+                        <button class="menu-item" data-action="copy">📋 Копировать</button>
+                        <button class="menu-item" data-action="share">📤 Поделиться</button>
+                    </div>
 
-                <div class="mobile-menu-section">
-                    <h4>Сохранение</h4>
-                    <button class="mobile-menu-item" data-action="savePNG">💾 PNG</button>
-                    <button class="mobile-menu-item" data-action="saveJPG">🖼️ JPG</button>
-                    <button class="mobile-menu-item" data-action="copyClipboard">📋 Копировать</button>
-                    <button class="mobile-menu-item" data-action="share">📤 Поделиться</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Затемнение фона для меню -->
-        <div id="mobileOverlay" class="mobile-overlay"></div>
-
-        <!-- Панель слоев -->
-        <div id="layersPanel" class="panel layers-panel">
-            <div class="panel-header">
-                <h4>Слои</h4>
-                <div class="panel-actions">
-                    <button id="addLayer" class="icon-btn" title="Добавить слой">+</button>
-                    <button id="mergeLayers" class="icon-btn" title="Объединить слои">🔄</button>
-                    <button id="closeLayers" class="close-btn">✕</button>
-                </div>
-            </div>
-            <div id="layersList" class="layers-list"></div>
-        </div>
-
-        <!-- Панель шаблонов -->
-        <div id="templatesPanel" class="panel templates-panel">
-            <div class="panel-header">
-                <h4>Шаблоны</h4>
-                <button id="closeTemplates" class="close-btn">✕</button>
-            </div>
-            <div class="templates-grid">
-                <div class="template-item" data-template="comic">
-                    <div class="template-preview">🦸</div>
-                    <span>Комикс</span>
-                </div>
-                <div class="template-item" data-template="storyboard">
-                    <div class="template-preview">🎬</div>
-                    <span>Раскадровка</span>
-                </div>
-                <div class="template-item" data-template="mindmap">
-                    <div class="template-preview">🧠</div>
-                    <span>Ментальная карта</span>
-                </div>
-                <div class="template-item" data-template="ui">
-                    <div class="template-preview">📱</div>
-                    <span>UI макет</span>
-                </div>
-                <div class="template-item" data-template="flowchart">
-                    <div class="template-preview">📊</div>
-                    <span>Блок-схема</span>
-                </div>
-                <div class="template-item" data-template="sketch">
-                    <div class="template-preview">✏️</div>
-                    <span>Эскиз</span>
+                    <div class="menu-section">
+                        <h4>Настройки</h4>
+                        <button class="menu-item" data-action="background-menu">🎨 Фон</button>
+                        <button class="menu-item" data-action="templates-menu">📁 Шаблоны</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Панель фонов -->
-        <div id="backgroundPanel" class="panel background-panel">
-            <div class="panel-header">
-                <h4>Фон</h4>
-                <button id="closeBackground" class="close-btn">✕</button>
-            </div>
-            <div class="background-grid">
-                <div class="background-item" data-background="transparent">
-                    <div class="background-preview transparent-bg"></div>
-                    <span>Прозрачный</span>
+        <div class="panel-overlay" id="backgroundPanel">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Выбор фона</h3>
+                    <button class="close-btn" data-action="close-background">✕</button>
                 </div>
-                <div class="background-item" data-background="white">
-                    <div class="background-preview white-bg"></div>
-                    <span>Белый</span>
-                </div>
-                <div class="background-item" data-background="grid">
-                    <div class="background-preview grid-bg"></div>
-                    <span>Сетка</span>
-                </div>
-                <div class="background-item" data-background="lined">
-                    <div class="background-preview lined-bg"></div>
-                    <span>Линовка</span>
-                </div>
-                <div class="background-item" data-background="graph">
-                    <div class="background-preview graph-bg"></div>
-                    <span>Миллиметровка</span>
-                </div>
-                <div class="background-item" data-action="custom">
-                    <div class="background-preview custom-bg">+</div>
-                    <span>Свой фон</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Панель совместной работы -->
-        <div id="collabPanel" class="panel collab-panel">
-            <div class="panel-header">
-                <h4>Совместная работа</h4>
-                <button id="closeCollab" class="close-btn">✕</button>
-            </div>
-            <div class="collab-content">
-                <div class="collab-section">
-                    <button id="startCollab" class="collab-btn primary">🎮 Начать сессию</button>
-                    <div class="session-info">
-                        <label>ID вашей сессии:</label>
-                        <div class="session-id-container">
-                            <input type="text" id="sessionId" readonly>
-                            <button id="copySessionId" class="icon-btn">📋</button>
+                <div class="panel-content">
+                    <div class="background-options">
+                        <div class="bg-option" data-bg="transparent">
+                            <div class="bg-preview transparent"></div>
+                            <span>Прозрачный</span>
+                        </div>
+                        <div class="bg-option" data-bg="white">
+                            <div class="bg-preview white"></div>
+                            <span>Белый</span>
+                        </div>
+                        <div class="bg-option" data-bg="grid">
+                            <div class="bg-preview grid"></div>
+                            <span>Сетка</span>
+                        </div>
+                        <div class="bg-option" data-bg="lined">
+                            <div class="bg-preview lined"></div>
+                            <span>Линовка</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="collab-section">
-                    <div class="join-section">
-                        <input type="text" id="joinSessionId" placeholder="Введите ID сессии">
-                        <button id="joinCollab" class="collab-btn secondary">✅ Присоединиться</button>
-                    </div>
+            </div>
+        </div>
+
+        <!-- Панель шаблонов -->
+        <div class="panel-overlay" id="templatesPanel">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Шаблоны</h3>
+                    <button class="close-btn" data-action="close-templates">✕</button>
                 </div>
-                
-                <div class="collab-section">
-                    <div id="usersList" class="users-list">
-                        <div class="user-item host">
-                            <span class="user-icon">👤</span>
-                            <span class="user-name">Вы (владелец)</span>
+                <div class="panel-content">
+                    <div class="template-options">
+                        <div class="template-option" data-template="comic">
+                            <div class="template-preview">🦸</div>
+                            <span>Комикс</span>
+                        </div>
+                        <div class="template-option" data-template="storyboard">
+                            <div class="template-preview">🎬</div>
+                            <span>Раскадровка</span>
+                        </div>
+                        <div class="template-option" data-template="mindmap">
+                            <div class="template-preview">🧠</div>
+                            <span>Ментальная карта</span>
                         </div>
                     </div>
-                </div>
-                
-                <div class="collab-status" id="collabStatus">
-                    <span class="status-icon">🔴</span>
-                    <span class="status-text">Неактивно</span>
                 </div>
             </div>
         </div>
 
-        <!-- Контейнер холста -->
-        <div class="canvas-container">
-            <canvas id="paintCanvas"></canvas>
-            <div class="canvas-overlay" id="canvasOverlay"></div>
-        </div>
-
-        <!-- Мобильная панель действий -->
-        <div class="mobile-actions">
-            <button id="mobileUndo" title="Отменить">↩️</button>
-            <button id="mobileClear" title="Очистить">🗑️</button>
-            <button id="mobileRedo" title="Повторить">↪️</button>
-            <button id="mobileBackground" title="Фон">🖼️</button>
-        </div>
-
-        <!-- Уведомления -->
-        <div id="notification" class="notification">
+        <!-- Уведомление -->
+        <div class="notification" id="notification">
             <span id="notificationText"></span>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // JavaScript будет встроен
+    </script>
 </body>
 </html>
