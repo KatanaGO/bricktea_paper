@@ -64,3 +64,29 @@ body {
     display: block;
     border: none;
 }
+
+.tools {
+    display: flex;
+    gap: 5px;
+    padding: 10px;
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    flex-wrap: wrap;
+}
+
+.tool-btn {
+    padding: 6px 12px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    background: var(--tg-theme-bg-color, #ffffff);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.tool-btn.active {
+    border-color: var(--tg-theme-button-color, #2481cc);
+}
+
+.brush-settings {
+    padding: 5px 10px;
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+}
