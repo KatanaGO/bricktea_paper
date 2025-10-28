@@ -4,35 +4,357 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Paint Messenger</title>
-    <style>
-        /* CSS будет встроен для быстрой загрузки */
-    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Reset и базовые стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f0f0f0;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            overflow: hidden;
+            height: 100vh;
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--tg-theme-bg-color, #ffffff);
+        }
+
+        /* Панель инструментов */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tool-btn {
+            padding: 10px 12px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-btn.active {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border-color: var(--tg-theme-button-color, #2481cc);
+        }
+
+        .color-picker {
+            width: 44px;
+            height: 44px;
+            padding: 2px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 6px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            cursor: pointer;
+        }
+
+        .brush-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brush-size {
+            width: 80px;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            -webkit-appearance: none;
+        }
+
+        .brush-size::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color, #2481cc);
+            cursor: pointer;
+        }
+
+        .size-value {
+            font-size: 14px;
+            min-width: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Холст */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        #paintCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            touch-action: none;
+        }
+
+        /* Нижняя панель */
+        .bottom-toolbar {
+            display: flex;
+            padding: 10px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            gap: 8px;
+            justify-content: space-around;
+        }
+
+        .action-btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            max-width: 120px;
+            min-height: 44px;
+        }
+
+        .action-btn:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+
+        /* Меню */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .menu-overlay.active {
+            display: flex;
+        }
+
+        .menu-panel {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 12px;
+            max-width: 90%;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: panelSlideIn 0.3s ease-out;
+        }
+
+        @keyframes panelSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .menu-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            padding: 8px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--tg-theme-text-color, #000000);
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-content {
+            padding: 16px;
+        }
+
+        .menu-section {
+            margin-bottom: 20px;
+        }
+
+        .menu-section h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+            opacity: 0.7;
+        }
+
+        .menu-item {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border: none;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-item:active {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 2000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .notification.hide {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 360px) {
+            .toolbar {
+                padding: 8px;
+            }
+            
+            .tool-btn {
+                padding: 8px 10px;
+                min-width: 40px;
+                min-height: 40px;
+                font-size: 14px;
+            }
+            
+            .action-btn {
+                font-size: 12px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="app">
-        <!-- Главная панель инструментов -->
-        <div class="main-toolbar">
-            <div class="tool-section">
+        <!-- Панель инструментов -->
+        <div class="toolbar">
+            <div class="tool-group">
                 <button class="tool-btn active" data-tool="brush" title="Кисть">🖌️</button>
                 <button class="tool-btn" data-tool="eraser" title="Ластик">🧹</button>
                 <button class="tool-btn" data-tool="text" title="Текст">📝</button>
-                <button class="tool-btn" data-tool="shapes" title="Фигуры">⬜</button>
             </div>
             
-            <div class="tool-section">
+            <div class="tool-group">
                 <input type="color" class="color-picker" value="#000000" title="Цвет">
-                <div class="brush-size-container">
-                    <input type="range" class="brush-size" min="1" max="30" value="3" title="Размер">
-                    <span class="size-value">3</span>
+                <div class="brush-controls">
+                    <input type="range" class="brush-size" min="1" max="30" value="5" title="Размер кисти">
+                    <span class="size-value">5</span>
                 </div>
             </div>
 
-            <div class="tool-section">
-                <button class="action-btn" data-action="undo" title="Отменить">↩️</button>
-                <button class="action-btn" data-action="redo" title="Повторить">↪️</button>
-                <button class="action-btn" data-action="clear" title="Очистить">🗑️</button>
-                <button class="action-btn" data-action="menu" title="Меню">☰</button>
+            <div class="tool-group">
+                <button class="tool-btn" data-action="undo" title="Отменить">↩️</button>
+                <button class="tool-btn" data-action="redo" title="Повторить">↪️</button>
+                <button class="tool-btn" data-action="clear" title="Очистить">🗑️</button>
             </div>
         </div>
 
@@ -41,18 +363,18 @@
             <canvas id="paintCanvas"></canvas>
         </div>
 
-        <!-- Вспомогательная панель -->
-        <div class="secondary-toolbar">
-            <button class="sec-btn" data-action="save">💾 Сохранить</button>
-            <button class="sec-btn" data-action="background">🎨 Фон</button>
-            <button class="sec-btn" data-action="templates">📁 Шаблоны</button>
+        <!-- Нижняя панель -->
+        <div class="bottom-toolbar">
+            <button class="action-btn" data-action="menu">☰ Меню</button>
+            <button class="action-btn" data-action="save">💾 Сохранить</button>
+            <button class="action-btn" data-action="background">🎨 Фон</button>
         </div>
 
         <!-- Меню -->
         <div class="menu-overlay" id="menuOverlay">
             <div class="menu-panel">
                 <div class="menu-header">
-                    <h3>Меню</h3>
+                    <h3>Меню Paint Messenger</h3>
                     <button class="close-btn" data-action="close-menu">✕</button>
                 </div>
                 
@@ -60,81 +382,23 @@
                     <div class="menu-section">
                         <h4>Инструменты</h4>
                         <button class="menu-item" data-tool="brush">🖌️ Кисть</button>
-                        <button class="menu-item" data-tool="line">📏 Линия</button>
-                        <button class="menu-item" data-tool="rect">⬜ Прямоугольник</button>
-                        <button class="menu-item" data-tool="circle">⭕ Круг</button>
-                        <button class="menu-item" data-tool="text">📝 Текст</button>
                         <button class="menu-item" data-tool="eraser">🧹 Ластик</button>
+                        <button class="menu-item" data-tool="text">📝 Текст</button>
                     </div>
                     
                     <div class="menu-section">
-                        <h4>Действия</h4>
-                        <button class="menu-item" data-action="save-png">💾 PNG</button>
-                        <button class="menu-item" data-action="save-jpg">🖼️ JPG</button>
-                        <button class="menu-item" data-action="copy">📋 Копировать</button>
-                        <button class="menu-item" data-action="share">📤 Поделиться</button>
+                        <h4>Сохранить рисунок</h4>
+                        <button class="menu-item" data-action="save-png">💾 Сохранить PNG</button>
+                        <button class="menu-item" data-action="save-jpg">🖼️ Сохранить JPG</button>
+                        <button class="menu-item" data-action="copy">📋 Копировать в буфер</button>
                     </div>
 
                     <div class="menu-section">
-                        <h4>Настройки</h4>
-                        <button class="menu-item" data-action="background-menu">🎨 Фон</button>
-                        <button class="menu-item" data-action="templates-menu">📁 Шаблоны</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Панель фонов -->
-        <div class="panel-overlay" id="backgroundPanel">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3>Выбор фона</h3>
-                    <button class="close-btn" data-action="close-background">✕</button>
-                </div>
-                <div class="panel-content">
-                    <div class="background-options">
-                        <div class="bg-option" data-bg="transparent">
-                            <div class="bg-preview transparent"></div>
-                            <span>Прозрачный</span>
-                        </div>
-                        <div class="bg-option" data-bg="white">
-                            <div class="bg-preview white"></div>
-                            <span>Белый</span>
-                        </div>
-                        <div class="bg-option" data-bg="grid">
-                            <div class="bg-preview grid"></div>
-                            <span>Сетка</span>
-                        </div>
-                        <div class="bg-option" data-bg="lined">
-                            <div class="bg-preview lined"></div>
-                            <span>Линовка</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Панель шаблонов -->
-        <div class="panel-overlay" id="templatesPanel">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3>Шаблоны</h3>
-                    <button class="close-btn" data-action="close-templates">✕</button>
-                </div>
-                <div class="panel-content">
-                    <div class="template-options">
-                        <div class="template-option" data-template="comic">
-                            <div class="template-preview">🦸</div>
-                            <span>Комикс</span>
-                        </div>
-                        <div class="template-option" data-template="storyboard">
-                            <div class="template-preview">🎬</div>
-                            <span>Раскадровка</span>
-                        </div>
-                        <div class="template-option" data-template="mindmap">
-                            <div class="template-preview">🧠</div>
-                            <span>Ментальная карта</span>
-                        </div>
+                        <h4>Фон</h4>
+                        <button class="menu-item" data-background="transparent">◻️ Прозрачный</button>
+                        <button class="menu-item" data-background="white">⬜ Белый</button>
+                        <button class="menu-item" data-background="grid">🔲 Сетка</button>
+                        <button class="menu-item" data-background="lined">📄 Линовка</button>
                     </div>
                 </div>
             </div>
@@ -147,7 +411,575 @@
     </div>
 
     <script>
-        // JavaScript будет встроен
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+
+        // Основные переменные
+        let canvas, ctx;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let currentTool = 'brush';
+        let currentColor = '#000000';
+        let brushSize = 5;
+
+        // История действий
+        let history = [];
+        let historyIndex = -1;
+
+        // Инициализация приложения
+        function initApp() {
+            console.log('🚀 Инициализация Paint Messenger...');
+            
+            // Инициализация Telegram
+            if (tg && tg.initData) {
+                tg.ready();
+                tg.expand();
+                applyTelegramTheme();
+            }
+            
+            // Инициализация элементов
+            initCanvas();
+            initEventListeners();
+            initTools();
+            
+            // Сохранение начального состояния
+            saveState();
+            
+            console.log('✅ Приложение инициализировано');
+            showNotification('Paint Messenger готов! 🎨');
+        }
+
+        function applyTelegramTheme() {
+            if (tg.themeParams) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
+            }
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('paintCanvas');
+            ctx = canvas.getContext('2d');
+            
+            setupCanvasSize();
+            setupCanvasStyle();
+            
+            // Обработчик изменения размера
+            window.addEventListener('resize', debounce(setupCanvasSize, 100));
+        }
+
+        function setupCanvasSize() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Установка размеров с учетом DPR
+            canvas.width = Math.floor(rect.width * dpr);
+            canvas.height = Math.floor(rect.height * dpr);
+            
+            // Масштабирование контекста
+            ctx.scale(dpr, dpr);
+            
+            // CSS размеры
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            // Настройка сглаживания
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+        }
+
+        function setupCanvasStyle() {
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = brushSize;
+            ctx.strokeStyle = currentColor;
+        }
+
+        function initEventListeners() {
+            // Инструменты
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tool = e.target.closest('.tool-btn').dataset.tool;
+                    selectTool(tool);
+                });
+            });
+            
+            // Действия в тулбаре
+            document.querySelectorAll('.tool-btn[data-action]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = e.target.closest('.tool-btn').dataset.action;
+                    handleAction(action);
+                });
+            });
+            
+            // Действия в нижней панели
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = e.target.closest('.action-btn').dataset.action;
+                    handleAction(action);
+                });
+            });
+            
+            // Пункты меню
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const tool = e.target.closest('.menu-item').dataset.tool;
+                    const action = e.target.closest('.menu-item').dataset.action;
+                    const background = e.target.closest('.menu-item').dataset.background;
+                    
+                    if (tool) selectTool(tool);
+                    if (action) handleMenuAction(action);
+                    if (background) setBackground(background);
+                    
+                    closeMenu();
+                });
+            });
+            
+            // Закрытие меню
+            document.querySelector('.close-btn').addEventListener('click', closeMenu);
+            
+            // Настройки кисти
+            document.querySelector('.color-picker').addEventListener('input', (e) => {
+                currentColor = e.target.value;
+                ctx.strokeStyle = currentColor;
+            });
+            
+            document.querySelector('.brush-size').addEventListener('input', (e) => {
+                brushSize = parseInt(e.target.value);
+                ctx.lineWidth = brushSize;
+                document.querySelector('.size-value').textContent = brushSize;
+            });
+            
+            // События холста
+            setupCanvasEvents();
+            
+            // Глобальные события
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('menu-overlay')) {
+                    closeMenu();
+                }
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeMenu();
+            });
+        }
+
+        function setupCanvasEvents() {
+            // Мышь
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Касания
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('touchcancel', stopDrawing);
+        }
+
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                startDrawing(e.touches[0]);
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                draw(e.touches[0]);
+            }
+        }
+
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const coords = getCoordinates(e);
+            [lastX, lastY] = [coords.x, coords.y];
+            
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+            }
+            
+            if (currentTool === 'text') {
+                addText(lastX, lastY);
+                isDrawing = false;
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const coords = getCoordinates(e);
+            const currentX = coords.x;
+            const currentY = coords.y;
+            
+            // Настройка стиля для ластика
+            if (currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+            }
+            
+            ctx.lineWidth = brushSize;
+            
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+            }
+            
+            [lastX, lastY] = [currentX, currentY];
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                
+                if (currentTool === 'brush' || currentTool === 'eraser') {
+                    saveState();
+                }
+                
+                // Сброс композиции
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        function selectTool(tool) {
+            currentTool = tool;
+            
+            // Обновление UI
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+            
+            showNotification(`Инструмент: ${getToolName(tool)}`);
+            
+            // Тактильная отдача
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.selectionChangedOccurred();
+            }
+        }
+
+        function getToolName(tool) {
+            const names = {
+                'brush': 'Кисть',
+                'eraser': 'Ластик',
+                'text': 'Текст'
+            };
+            return names[tool] || tool;
+        }
+
+        function handleAction(action) {
+            switch(action) {
+                case 'undo':
+                    undo();
+                    break;
+                case 'redo':
+                    redo();
+                    break;
+                case 'clear':
+                    clearCanvas();
+                    break;
+                case 'menu':
+                    openMenu();
+                    break;
+                case 'save':
+                    showSaveOptions();
+                    break;
+                case 'background':
+                    openBackgroundMenu();
+                    break;
+            }
+        }
+
+        function handleMenuAction(action) {
+            switch(action) {
+                case 'save-png':
+                    saveAsPNG();
+                    break;
+                case 'save-jpg':
+                    saveAsJPG();
+                    break;
+                case 'copy':
+                    copyToClipboard();
+                    break;
+            }
+        }
+
+        // История действий
+        function saveState() {
+            const state = canvas.toDataURL();
+            history = history.slice(0, historyIndex + 1);
+            history.push(state);
+            historyIndex++;
+            
+            // Ограничение истории
+            if (history.length > 20) {
+                history.shift();
+                historyIndex--;
+            }
+        }
+
+        function restoreState() {
+            if (historyIndex >= 0) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = history[historyIndex];
+            }
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState();
+                showNotification('Действие отменено');
+                
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } else {
+                showNotification('Нечего отменять');
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreState();
+                showNotification('Действие повторено');
+                
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } else {
+                showNotification('Нечего повторять');
+            }
+        }
+
+        function clearCanvas() {
+            const confirmed = confirm('Очистить весь холст?');
+            if (confirmed) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                saveState();
+                showNotification('Холст очищен');
+                
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            }
+        }
+
+        // Текст
+        function addText(x, y) {
+            const text = prompt('Введите текст:');
+            if (text) {
+                ctx.font = `bold ${brushSize * 5}px Arial`;
+                ctx.fillStyle = currentColor;
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+                saveState();
+                showNotification('Текст добавлен');
+            }
+        }
+
+        // Фоны
+        function setBackground(type) {
+            const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            switch(type) {
+                case 'white':
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    break;
+                case 'grid':
+                    drawGridBackground();
+                    break;
+                case 'lined':
+                    drawLinedBackground();
+                    break;
+                case 'transparent':
+                    // Прозрачный - ничего не делаем
+                    break;
+            }
+            
+            // Восстанавливаем рисунок поверх фона
+            ctx.putImageData(currentState, 0, 0);
+            saveState();
+            showNotification(`Фон: ${getBackgroundName(type)}`);
+        }
+
+        function getBackgroundName(type) {
+            const names = {
+                'transparent': 'Прозрачный',
+                'white': 'Белый',
+                'grid': 'Сетка',
+                'lined': 'Линовка'
+            };
+            return names[type] || type;
+        }
+
+        function drawGridBackground() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            const gridSize = 20;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawLinedBackground() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#87CEEB';
+            ctx.lineWidth = 1;
+            
+            const lineSpacing = 24;
+            for (let y = lineSpacing; y < canvas.height; y += lineSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        // Сохранение и экспорт
+        function showSaveOptions() {
+            openMenu();
+        }
+
+        function saveAsPNG() {
+            const link = document.createElement('a');
+            link.download = `рисунок-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showNotification('Сохранено как PNG');
+            
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        function saveAsJPG() {
+            const link = document.createElement('a');
+            link.download = `рисунок-${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+            showNotification('Сохранено как JPG');
+            
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        async function copyToClipboard() {
+            try {
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                showNotification('Скопировано в буфер обмена');
+                
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (err) {
+                showNotification('Ошибка копирования');
+            }
+        }
+
+        // Управление меню
+        function openMenu() {
+            document.getElementById('menuOverlay').classList.add('active');
+            
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function closeMenu() {
+            document.getElementById('menuOverlay').classList.remove('active');
+        }
+
+        function openBackgroundMenu() {
+            openMenu();
+        }
+
+        // Утилиты
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function showNotification(message, duration = 2000) {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            
+            text.textContent = message;
+            notification.classList.remove('hide');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.classList.add('hide');
+            }, duration);
+        }
+
+        function initTools() {
+            // Инициализация начального состояния инструментов
+            document.querySelector('.size-value').textContent = brushSize;
+        }
+
+        // Обработка ошибок
+        window.addEventListener('error', (e) => {
+            console.error('Ошибка:', e.error);
+            showNotification('Произошла ошибка');
+        });
+
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
