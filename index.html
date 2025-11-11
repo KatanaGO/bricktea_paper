@@ -559,7 +559,7 @@
 
     <script>
         // Инициализация Telegram Web App
-        const tg = window.Telegram.WebApp;
+        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
         // Основные переменные
         let canvas, ctx;
@@ -577,34 +577,53 @@
         let historyIndex = -1;
 
         // Совместное рисование
-        let peer = null;
-        let connections = [];
         let currentSession = null;
+        let instanceId = 'user_' + Math.random().toString(36).substr(2, 9);
 
         // Инициализация приложения
         function initApp() {
             console.log('🚀 Инициализация Paint Messenger...');
             
-            // Инициализация Telegram
-            tg.ready();
-            tg.expand();
-            tg.enableClosingConfirmation();
-            applyTelegramTheme();
-            
-            // Инициализация элементов
-            initCanvas();
-            initEventListeners();
-            initTools();
-            
-            // Сохранение начального состояния
-            saveState();
-            
-            console.log('✅ Приложение инициализировано');
-            showNotification('Paint Messenger готов! 🎨');
+            try {
+                // Инициализация Telegram с проверкой ошибок
+                if (tg && tg.initData) {
+                    tg.ready();
+                    tg.expand();
+                    try {
+                        tg.enableClosingConfirmation();
+                    } catch (e) {
+                        console.log('Функция подтверждения закрытия недоступна');
+                    }
+                    applyTelegramTheme();
+                } else {
+                    console.log('Приложение запущено вне Telegram');
+                    // Устанавливаем светлую тему по умолчанию
+                    document.documentElement.style.setProperty('--tg-theme-bg-color', '#ffffff');
+                    document.documentElement.style.setProperty('--tg-theme-text-color', '#000000');
+                }
+                
+                // Инициализация элементов
+                initCanvas();
+                initEventListeners();
+                initTools();
+                
+                // Сохранение начального состояния
+                saveState();
+                
+                console.log('✅ Приложение инициализировано');
+                showNotification('Paint Messenger готов! 🎨');
+                
+            } catch (error) {
+                console.error('Критическая ошибка инициализации:', error);
+                // Минимальная функциональность даже при ошибках
+                initCanvas();
+                initEventListeners();
+                showNotification('Приложение запущено в ограниченном режиме');
+            }
         }
 
         function applyTelegramTheme() {
-            if (tg.themeParams) {
+            if (tg && tg.themeParams) {
                 document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
                 document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
                 document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
@@ -709,35 +728,33 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
             
-            // Касания
-            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            // Касания - улучшенная обработка
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousedown', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    canvas.dispatchEvent(mouseEvent);
+                }
+            }, { passive: false });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    canvas.dispatchEvent(mouseEvent);
+                }
+            }, { passive: false });
+            
             canvas.addEventListener('touchend', stopDrawing);
             canvas.addEventListener('touchcancel', stopDrawing);
-        }
-
-        function handleTouchStart(e) {
-            if (e.touches.length === 1) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            }
-        }
-
-        function handleTouchMove(e) {
-            if (e.touches.length === 1) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            }
         }
 
         function getCanvasCoordinates(e) {
@@ -769,7 +786,14 @@
                 ctx.moveTo(lastX, lastY);
             }
             
-            tg.HapticFeedback.impactOccurred('light');
+            // Тактильная отдача с проверкой ошибок
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } catch (error) {
+                // Игнорируем ошибки тактильной отдачи
+            }
         }
 
         function draw(e) {
@@ -826,7 +850,7 @@
                 isDrawing = false;
                 
                 // Отправка данных для совместной работы
-                if (currentSession && connections.length > 0) {
+                if (currentSession) {
                     broadcastDrawingData();
                 }
                 
@@ -852,7 +876,16 @@
             document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
             
             showNotification(`Инструмент: ${getToolName(tool)}`);
-            tg.HapticFeedback.selectionChangedOccurred();
+            
+            // Добавляем проверку на доступность тактильной отдачи
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.selectionChangedOccurred) {
+                    tg.HapticFeedback.selectionChangedOccurred();
+                }
+            } catch (error) {
+                console.log('Тактильная отдача недоступна:', error);
+            }
+            
             closeMenu();
         }
 
@@ -943,26 +976,16 @@
 
         // Текст
         function addText(x, y) {
-            tg.showPopup({
-                title: 'Добавить текст',
-                message: 'Введите текст:',
-                buttons: [
-                    { type: 'cancel', text: 'Отмена' },
-                    { type: 'default', text: 'Добавить' }
-                ]
-            }, (buttonId) => {
-                if (buttonId === 1) {
-                    const text = prompt('Введите текст:');
-                    if (text) {
-                        ctx.font = `bold ${brushSize * 4}px Arial`;
-                        ctx.fillStyle = currentColor;
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(text, x, y);
-                        saveState();
-                        showNotification('Текст добавлен');
-                    }
-                }
-            });
+            // Используем стандартный prompt вместо Telegram API для совместимости
+            const text = prompt('Введите текст:');
+            if (text) {
+                ctx.font = `bold ${brushSize * 4}px Arial`;
+                ctx.fillStyle = currentColor;
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+                saveState();
+                showNotification('Текст добавлен');
+            }
         }
 
         // История действий
@@ -996,7 +1019,13 @@
                 historyIndex--;
                 restoreState();
                 showNotification('Действие отменено');
-                tg.HapticFeedback.impactOccurred('light');
+                try {
+                    if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                        tg.HapticFeedback.impactOccurred('light');
+                    }
+                } catch (error) {
+                    // Игнорируем ошибки тактильной отдачи
+                }
             }
         }
 
@@ -1005,28 +1034,25 @@
                 historyIndex++;
                 restoreState();
                 showNotification('Действие повторено');
-                tg.HapticFeedback.impactOccurred('light');
+                try {
+                    if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                        tg.HapticFeedback.impactOccurred('light');
+                    }
+                } catch (error) {
+                    // Игнорируем ошибки тактильной отдачи
+                }
             }
         }
 
         // Сохранение и экспорт
         function showSaveOptions() {
-            tg.showPopup({
-                title: 'Сохранить рисунок',
-                message: 'Выберите способ сохранения:',
-                buttons: [
-                    { type: 'default', text: 'PNG' },
-                    { type: 'default', text: 'JPG' },
-                    { type: 'default', text: 'Копировать' },
-                    { type: 'cancel', text: 'Отмена' }
-                ]
-            }, (buttonId) => {
-                switch(buttonId) {
-                    case 0: saveAsPNG(); break;
-                    case 1: saveAsJPG(); break;
-                    case 2: copyToClipboard(); break;
-                }
-            });
+            // Используем стандартный confirm вместо Telegram API
+            const format = confirm('Сохранить как PNG? Нажмите ОК для PNG, Отмена для JPG');
+            if (format === true) {
+                saveAsPNG();
+            } else {
+                saveAsJPG();
+            }
         }
 
         function saveAsPNG() {
@@ -1035,7 +1061,13 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
             showNotification('Сохранено как PNG');
-            tg.HapticFeedback.notificationOccurred('success');
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (error) {
+                // Игнорируем ошибки тактильной отдачи
+            }
         }
 
         function saveAsJPG() {
@@ -1044,7 +1076,13 @@
             link.href = canvas.toDataURL('image/jpeg', 0.9);
             link.click();
             showNotification('Сохранено как JPG');
-            tg.HapticFeedback.notificationOccurred('success');
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (error) {
+                // Игнорируем ошибки тактильной отдачи
+            }
         }
 
         async function copyToClipboard() {
@@ -1052,7 +1090,13 @@
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 showNotification('Скопировано в буфер обмена');
-                tg.HapticFeedback.notificationOccurred('success');
+                try {
+                    if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                } catch (error) {
+                    // Игнорируем ошибки тактильной отдачи
+                }
             } catch (err) {
                 showNotification('Ошибка копирования');
             }
@@ -1075,15 +1119,15 @@
         // Совместное рисование
         function initCollaboration() {
             try {
-                // Используем простой WebSocket-like подход через localStorage для демонстрации
-                // В реальном приложении нужно использовать WebSockets или WebRTC
+                // Простая реализация через localStorage для демонстрации
                 window.addEventListener('storage', handleStorageEvent);
                 
-                // Симуляция совместного рисования через localStorage
-                setInterval(syncDrawing, 1000);
+                // Периодическая синхронизация
+                setInterval(syncDrawing, 500);
                 
             } catch (error) {
                 console.error('Ошибка инициализации совместной работы:', error);
+                showNotification('Совместное рисование временно недоступно');
             }
         }
 
@@ -1091,7 +1135,7 @@
             if (e.key === 'paint_collab' && currentSession) {
                 try {
                     const data = JSON.parse(e.newValue);
-                    if (data.sessionId === currentSession && data.type === 'drawing') {
+                    if (data.sessionId === currentSession && data.type === 'drawing' && data.sender !== instanceId) {
                         replayDrawing(data);
                     }
                 } catch (err) {
@@ -1109,6 +1153,7 @@
                     color: currentColor,
                     brushSize: brushSize,
                     coordinates: { startX, startY, lastX, lastY },
+                    sender: instanceId,
                     timestamp: Date.now()
                 };
                 
@@ -1116,38 +1161,55 @@
             }
         }
 
-        function replayDrawing(data) {
-            const tempCtx = canvas.getContext('2d');
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx2 = tempCanvas.getContext('2d');
-            tempCtx2.drawImage(canvas, 0, 0);
-            
-            tempCtx.strokeStyle = data.color;
-            tempCtx.lineWidth = data.brushSize;
-            tempCtx.globalCompositeOperation = data.tool === 'eraser' ? 'destination-out' : 'source-over';
-            
-            tempCtx.beginPath();
-            tempCtx.moveTo(data.coordinates.startX, data.coordinates.startY);
-            tempCtx.lineTo(data.coordinates.lastX, data.coordinates.lastY);
-            tempCtx.stroke();
-            
-            tempCtx.globalCompositeOperation = 'source-over';
-        }
-
         function broadcastDrawingData() {
-            // В реальном приложении здесь будет отправка через WebSockets
+            if (!currentSession) return;
+            
             const drawingData = {
                 sessionId: currentSession,
                 type: 'drawing',
                 tool: currentTool,
                 color: currentColor,
                 brushSize: brushSize,
-                coordinates: { startX, startY, lastX, lastY }
+                coordinates: { startX, startY, lastX, lastY },
+                sender: instanceId,
+                timestamp: Date.now()
             };
             
-            localStorage.setItem('paint_collab', JSON.stringify(drawingData));
+            try {
+                localStorage.setItem('paint_collab', JSON.stringify(drawingData));
+                // Триггерим событие вручную для этой же вкладки
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'paint_collab',
+                    newValue: JSON.stringify(drawingData)
+                }));
+            } catch (err) {
+                console.error('Ошибка отправки данных:', err);
+            }
+        }
+
+        function replayDrawing(data) {
+            // Сохраняем текущие настройки
+            const originalStrokeStyle = ctx.strokeStyle;
+            const originalLineWidth = ctx.lineWidth;
+            const originalGlobalCompositeOperation = ctx.globalCompositeOperation;
+            
+            // Устанавливаем настройки из данных
+            ctx.strokeStyle = data.color;
+            ctx.lineWidth = data.brushSize;
+            ctx.globalCompositeOperation = data.tool === 'eraser' ? 'destination-out' : 'source-over';
+            
+            // Воспроизводим рисование
+            if (data.tool === 'brush' || data.tool === 'eraser') {
+                ctx.beginPath();
+                ctx.moveTo(data.coordinates.startX, data.coordinates.startY);
+                ctx.lineTo(data.coordinates.lastX, data.coordinates.lastY);
+                ctx.stroke();
+            }
+            
+            // Восстанавливаем настройки
+            ctx.strokeStyle = originalStrokeStyle;
+            ctx.lineWidth = originalLineWidth;
+            ctx.globalCompositeOperation = originalGlobalCompositeOperation;
         }
 
         function startCollaboration() {
@@ -1184,7 +1246,13 @@
         function openMenu() {
             document.getElementById('menuOverlay').classList.add('active');
             document.getElementById('menuPanel').classList.add('active');
-            tg.HapticFeedback.impactOccurred('light');
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } catch (error) {
+                // Игнорируем ошибки тактильной отдачи
+            }
         }
 
         function closeMenu() {
@@ -1194,7 +1262,13 @@
 
         function openCollabPanel() {
             document.getElementById('collabPanel').classList.add('active');
-            tg.HapticFeedback.impactOccurred('light');
+            try {
+                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } catch (error) {
+                // Игнорируем ошибки тактильной отдачи
+            }
         }
 
         function closeCollabPanel() {
@@ -1219,17 +1293,35 @@
         }
 
         function showNotification(message, duration = 2000) {
-            const notification = document.getElementById('notification');
-            const text = document.getElementById('notificationText');
-            
-            text.textContent = message;
-            notification.classList.remove('hide');
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                notification.classList.add('hide');
-            }, duration);
+            try {
+                const notification = document.getElementById('notification');
+                const text = document.getElementById('notificationText');
+                
+                if (!notification || !text) {
+                    console.log('Notification:', message);
+                    return;
+                }
+                
+                text.textContent = message;
+                notification.classList.remove('hide');
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    notification.classList.add('hide');
+                }, duration);
+                
+                // Тактильная отдача с проверкой ошибок
+                try {
+                    if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                } catch (error) {
+                    // Игнорируем ошибки тактильной отдачи
+                }
+            } catch (error) {
+                console.log('Notification error:', error, message);
+            }
         }
 
         // Глобальные горячие клавиши
