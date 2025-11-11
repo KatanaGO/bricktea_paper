@@ -2,9 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Paint Messenger</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -14,18 +13,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #f0f0f0;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background: #ffffff;
+            color: #000000;
             overflow: hidden;
             height: 100vh;
         }
@@ -34,13 +25,12 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            background: var(--tg-theme-bg-color, #ffffff);
+            background: #ffffff;
         }
 
-        /* Header */
         .header {
             padding: 12px 16px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: #f0f0f0;
             border-bottom: 1px solid rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
@@ -55,8 +45,8 @@
 
         .menu-btn {
             padding: 8px 12px;
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            background: #2481cc;
+            color: #ffffff;
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -65,7 +55,6 @@
             min-height: 44px;
         }
 
-        /* Canvas */
         .canvas-container {
             flex: 1;
             position: relative;
@@ -79,16 +68,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: white;
             display: block;
             touch-action: none;
         }
 
-        /* Toolbar */
         .bottom-toolbar {
             display: flex;
             padding: 12px 16px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: #f0f0f0;
             border-top: 1px solid rgba(0,0,0,0.1);
             gap: 12px;
             justify-content: space-around;
@@ -98,8 +85,8 @@
             padding: 12px 16px;
             border: none;
             border-radius: 8px;
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            background: #2481cc;
+            color: #ffffff;
             font-size: 14px;
             cursor: pointer;
             flex: 1;
@@ -111,7 +98,6 @@
             gap: 6px;
         }
 
-        /* Menu */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -134,7 +120,7 @@
             width: 85%;
             max-width: 320px;
             height: 100%;
-            background: var(--tg-theme-bg-color, #ffffff);
+            background: #ffffff;
             box-shadow: -2px 0 20px rgba(0,0,0,0.3);
             transition: right 0.3s ease;
             display: flex;
@@ -148,7 +134,7 @@
 
         .menu-header {
             padding: 20px 16px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: #f0f0f0;
             border-bottom: 1px solid rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
@@ -187,7 +173,7 @@
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 12px;
-            color: var(--tg-theme-text-color, #000000);
+            color: #000000;
             opacity: 0.7;
             text-transform: uppercase;
         }
@@ -201,7 +187,7 @@
 
         .tool-option {
             padding: 12px 8px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: #f0f0f0;
             border: 2px solid transparent;
             border-radius: 8px;
             text-align: center;
@@ -214,9 +200,9 @@
         }
 
         .tool-option.active {
-            border-color: var(--tg-theme-button-color, #2481cc);
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            border-color: #2481cc;
+            background: #2481cc;
+            color: #ffffff;
         }
 
         .tool-icon {
@@ -233,7 +219,7 @@
             height: 44px;
             border: 2px solid rgba(0,0,0,0.1);
             border-radius: 8px;
-            background: var(--tg-theme-bg-color, #ffffff);
+            background: #ffffff;
             cursor: pointer;
             margin-bottom: 16px;
         }
@@ -258,7 +244,7 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: var(--tg-theme-button-color, #2481cc);
+            background: #2481cc;
             cursor: pointer;
         }
 
@@ -277,7 +263,7 @@
 
         .bg-option {
             padding: 16px 12px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: #f0f0f0;
             border: 2px solid transparent;
             border-radius: 8px;
             text-align: center;
@@ -290,7 +276,7 @@
         }
 
         .bg-option.active {
-            border-color: var(--tg-theme-button-color, #2481cc);
+            border-color: #2481cc;
         }
 
         .bg-preview {
@@ -298,15 +284,6 @@
             height: 50px;
             border-radius: 6px;
             border: 2px solid rgba(0,0,0,0.2);
-        }
-
-        .bg-preview.transparent {
-            background: 
-                linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 10px 10px;
         }
 
         .bg-preview.white {
@@ -333,14 +310,13 @@
             font-weight: 500;
         }
 
-        /* Notification */
         .notification {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            background: #2481cc;
+            color: #ffffff;
             padding: 12px 20px;
             border-radius: 8px;
             font-size: 14px;
@@ -355,63 +331,6 @@
         .notification.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
-        }
-
-        /* Collaboration */
-        .collab-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--tg-theme-bg-color, #ffffff);
-            border-radius: 12px;
-            padding: 20px;
-            z-index: 1100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            max-width: 90%;
-            width: 300px;
-            display: none;
-        }
-
-        .collab-panel.active {
-            display: block;
-        }
-
-        .collab-content {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .collab-btn {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            font-size: 14px;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .session-info {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .session-input {
-            padding: 12px;
-            border: 1px solid rgba(0,0,0,0.2);
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .users-list {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
         }
 
         @media (max-width: 360px) {
@@ -432,25 +351,21 @@
 </head>
 <body>
     <div class="app">
-        <!-- Header -->
         <div class="header">
             <div class="header-title">Paint Messenger</div>
             <button class="menu-btn" id="menuBtn">☰ Инструменты</button>
         </div>
 
-        <!-- Canvas -->
         <div class="canvas-container">
             <canvas id="paintCanvas"></canvas>
         </div>
 
-        <!-- Toolbar -->
         <div class="bottom-toolbar">
             <button class="bottom-btn" id="saveBtn">💾 Сохранить</button>
-            <button class="bottom-btn" id="shareBtn">📤 Поделиться</button>
-            <button class="bottom-btn" id="collabBtn">👥 Совместно</button>
+            <button class="bottom-btn" id="clearBtn">🗑️ Очистить</button>
+            <button class="bottom-btn" id="undoBtn">↶ Отмена</button>
         </div>
 
-        <!-- Menu -->
         <div class="menu-overlay" id="menuOverlay">
             <div class="menu-panel" id="menuPanel">
                 <div class="menu-header">
@@ -459,7 +374,6 @@
                 </div>
                 
                 <div class="menu-content">
-                    <!-- Tools -->
                     <div class="menu-section">
                         <div class="section-title">Инструменты рисования</div>
                         <div class="tool-grid">
@@ -483,34 +397,24 @@
                                 <div class="tool-icon">⭕</div>
                                 <div class="tool-name">Круг</div>
                             </div>
-                            <div class="tool-option" data-tool="text">
-                                <div class="tool-icon">📝</div>
-                                <div class="tool-name">Текст</div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Brush settings -->
                     <div class="menu-section">
                         <div class="section-title">Настройки кисти</div>
                         <input type="color" class="color-picker" id="colorPicker" value="#000000">
                         <div class="brush-controls">
-                            <input type="range" class="brush-size" id="brushSize" min="1" max="30" value="5">
+                            <input type="range" class="brush-size" id="brushSize" min="1" max="50" value="5">
                             <span class="size-value" id="sizeValue">5</span>
                         </div>
                     </div>
 
-                    <!-- Backgrounds -->
                     <div class="menu-section">
                         <div class="section-title">Фон холста</div>
                         <div class="background-grid">
                             <div class="bg-option active" data-bg="white">
                                 <div class="bg-preview white"></div>
                                 <div class="bg-name">Белый</div>
-                            </div>
-                            <div class="bg-option" data-bg="transparent">
-                                <div class="bg-preview transparent"></div>
-                                <div class="bg-name">Прозрачный</div>
                             </div>
                             <div class="bg-option" data-bg="grid">
                                 <div class="bg-preview grid"></div>
@@ -526,35 +430,12 @@
             </div>
         </div>
 
-        <!-- Collaboration Panel -->
-        <div class="collab-panel" id="collabPanel">
-            <div class="collab-content">
-                <button class="collab-btn" id="startCollab">🎮 Начать сессию</button>
-                <div class="session-info">
-                    <input type="text" class="session-input" id="sessionId" placeholder="ID сессии" readonly>
-                    <button class="collab-btn" id="copySessionId">📋 Копировать ID</button>
-                </div>
-                <div class="session-info">
-                    <input type="text" class="session-input" id="joinSessionId" placeholder="Введите ID сессии">
-                    <button class="collab-btn" id="joinCollab">✅ Присоединиться</button>
-                </div>
-                <div class="users-list" id="usersList">
-                    Участники: 1
-                </div>
-                <button class="collab-btn" id="closeCollab">✕ Закрыть</button>
-            </div>
-        </div>
-
-        <!-- Notification -->
         <div class="notification" id="notification">
             <span id="notificationText"></span>
         </div>
     </div>
 
     <script>
-        // Инициализация Telegram Web App
-        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
         // Основные переменные
         let canvas, ctx;
         let isDrawing = false;
@@ -565,66 +446,23 @@
         let brushSize = 5;
         let currentBackground = 'white';
         let savedImageData = null;
-
-        // История действий
         let history = [];
         let historyIndex = -1;
-
-        // Совместное рисование
-        let currentSession = null;
-        let instanceId = 'user_' + Math.random().toString(36).substr(2, 9);
-        let collabChannel = null;
 
         // Инициализация приложения
         function initApp() {
             console.log('🚀 Инициализация Paint Messenger...');
             
-            try {
-                // Инициализация Telegram с проверкой ошибок
-                if (tg && tg.initData) {
-                    tg.ready();
-                    tg.expand();
-                    try {
-                        tg.enableClosingConfirmation();
-                    } catch (e) {
-                        console.log('Функция подтверждения закрытия недоступна');
-                    }
-                    applyTelegramTheme();
-                } else {
-                    console.log('Приложение запущено вне Telegram');
-                    // Устанавливаем светлую тему по умолчанию
-                    document.documentElement.style.setProperty('--tg-theme-bg-color', '#ffffff');
-                    document.documentElement.style.setProperty('--tg-theme-text-color', '#000000');
-                }
-                
-                // Инициализация элементов
-                initCanvas();
-                initEventListeners();
-                initTools();
-                
-                // Сохранение начального состояния
-                saveState();
-                
-                console.log('✅ Приложение инициализировано');
-                showNotification('Paint Messenger готов! 🎨');
-                
-            } catch (error) {
-                console.error('Критическая ошибка инициализации:', error);
-                // Минимальная функциональность даже при ошибках
-                initCanvas();
-                initEventListeners();
-                showNotification('Приложение запущено в ограниченном режиме');
-            }
-        }
-
-        function applyTelegramTheme() {
-            if (tg && tg.themeParams) {
-                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
-                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
-                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
-                document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
-            }
+            // Инициализация элементов
+            initCanvas();
+            initEventListeners();
+            initTools();
+            
+            // Сохранение начального состояния
+            saveState();
+            
+            console.log('✅ Приложение инициализировано');
+            showNotification('Paint Messenger готов! 🎨');
         }
 
         function initCanvas() {
@@ -633,7 +471,7 @@
             
             setupCanvasSize();
             setupCanvasStyle();
-            setBackground(currentBackground);
+            drawBackground();
             
             // Обработчик изменения размера
             window.addEventListener('resize', debounce(setupCanvasSize, 100));
@@ -648,7 +486,7 @@
             canvas.height = rect.height;
             
             // Перерисовка фона
-            setBackground(currentBackground);
+            drawBackground();
             
             console.log('🎨 Canvas настроен:', canvas.width, canvas.height);
         }
@@ -666,9 +504,8 @@
             document.getElementById('menuBtn').addEventListener('click', openMenu);
             document.getElementById('closeMenu').addEventListener('click', closeMenu);
             document.getElementById('saveBtn').addEventListener('click', showSaveOptions);
-            document.getElementById('shareBtn').addEventListener('click', shareDrawing);
-            document.getElementById('collabBtn').addEventListener('click', openCollabPanel);
-            document.getElementById('closeCollab').addEventListener('click', closeCollabPanel);
+            document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+            document.getElementById('undoBtn').addEventListener('click', undo);
             
             // Инструменты
             document.querySelectorAll('.tool-option').forEach(option => {
@@ -700,11 +537,6 @@
                 document.getElementById('sizeValue').textContent = brushSize;
             });
             
-            // Совместное рисование
-            document.getElementById('startCollab').addEventListener('click', startCollaboration);
-            document.getElementById('copySessionId').addEventListener('click', copySessionId);
-            document.getElementById('joinCollab').addEventListener('click', joinCollaboration);
-            
             // События холста
             setupCanvasEvents();
             
@@ -723,7 +555,7 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
             
-            // Касания - улучшенная обработка
+            // Касания
             canvas.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 if (e.touches.length === 1) {
@@ -761,12 +593,6 @@
         }
 
         function startDrawing(e) {
-            if (currentTool === 'text') {
-                const coords = getCanvasCoordinates(e);
-                addText(coords.x, coords.y);
-                return;
-            }
-            
             isDrawing = true;
             const coords = getCanvasCoordinates(e);
             [lastX, lastY] = [coords.x, coords.y];
@@ -780,15 +606,6 @@
                 ctx.beginPath();
                 ctx.moveTo(lastX, lastY);
             }
-            
-            // Тактильная отдача с проверкой ошибок
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
-            } catch (error) {
-                // Игнорируем ошибки тактильной отдачи
-            }
         }
 
         function draw(e) {
@@ -801,7 +618,7 @@
             // Настройка стиля
             if (currentTool === 'eraser') {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.strokeStyle = 'rgba(255,255,255,1)';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
             } else {
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = currentColor;
@@ -814,7 +631,6 @@
                 case 'eraser':
                     ctx.lineTo(currentX, currentY);
                     ctx.stroke();
-                    [lastX, lastY] = [currentX, currentY];
                     break;
                     
                 case 'line':
@@ -838,21 +654,16 @@
                     ctx.stroke();
                     break;
             }
+            
+            [lastX, lastY] = [currentX, currentY];
         }
 
         function stopDrawing() {
             if (isDrawing) {
                 isDrawing = false;
                 
-                // Отправка данных для совместной работы
-                if (currentSession) {
-                    broadcastDrawingData();
-                }
-                
                 // Сохранение в историю
-                if (currentTool !== 'text') {
-                    saveState();
-                }
+                saveState();
                 
                 // Сброс композиции
                 ctx.globalCompositeOperation = 'source-over';
@@ -871,16 +682,6 @@
             document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
             
             showNotification(`Инструмент: ${getToolName(tool)}`);
-            
-            // Добавляем проверку на доступность тактильной отдачи
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.selectionChangedOccurred) {
-                    tg.HapticFeedback.selectionChangedOccurred();
-                }
-            } catch (error) {
-                console.log('Тактильная отдача недоступна:', error);
-            }
-            
             closeMenu();
         }
 
@@ -890,30 +691,30 @@
                 'eraser': 'Ластик',
                 'line': 'Линия',
                 'rect': 'Прямоугольник',
-                'circle': 'Круг',
-                'text': 'Текст'
+                'circle': 'Круг'
             };
             return names[tool] || tool;
         }
 
-        // Фоны - ПЕРЕРАБОТАННАЯ ФУНКЦИЯ
+        // Фоны
         function setBackground(type) {
             currentBackground = type;
-            
+            drawBackground();
+            saveState();
+        }
+
+        function drawBackground() {
             // Сохраняем текущий рисунок
             const currentDrawing = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
             // Очищаем холст
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Рисуем новый фон
-            switch(type) {
+            // Рисуем фон
+            switch(currentBackground) {
                 case 'white':
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    break;
-                case 'transparent':
-                    // Прозрачный фон - ничего не рисуем
                     break;
                 case 'grid':
                     drawGridBackground();
@@ -925,9 +726,6 @@
             
             // Восстанавливаем рисунок поверх фона
             ctx.putImageData(currentDrawing, 0, 0);
-            
-            // Сохраняем состояние
-            saveState();
         }
 
         function updateBackgroundUI(bg) {
@@ -975,22 +773,9 @@
             }
         }
 
-        // Текст
-        function addText(x, y) {
-            const text = prompt('Введите текст:');
-            if (text) {
-                ctx.font = `bold ${brushSize * 4}px Arial`;
-                ctx.fillStyle = currentColor;
-                ctx.textBaseline = 'middle';
-                ctx.fillText(text, x, y);
-                saveState();
-                showNotification('Текст добавлен');
-            }
-        }
-
         // История действий
         function saveState() {
-            const state = canvas.toDataURL();
+            const state = ctx.getImageData(0, 0, canvas.width, canvas.height);
             history = history.slice(0, historyIndex + 1);
             history.push(state);
             historyIndex++;
@@ -1004,13 +789,10 @@
 
         function restoreState() {
             if (historyIndex >= 0) {
-                const img = new Image();
-                img.onload = function() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    setBackground(currentBackground);
-                    ctx.drawImage(img, 0, 0);
-                };
-                img.src = history[historyIndex];
+                const state = history[historyIndex];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBackground();
+                ctx.putImageData(state, 0, 0);
             }
         }
 
@@ -1019,28 +801,15 @@
                 historyIndex--;
                 restoreState();
                 showNotification('Действие отменено');
-                try {
-                    if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-                        tg.HapticFeedback.impactOccurred('light');
-                    }
-                } catch (error) {
-                    // Игнорируем ошибки тактильной отдачи
-                }
             }
         }
 
-        function redo() {
-            if (historyIndex < history.length - 1) {
-                historyIndex++;
-                restoreState();
-                showNotification('Действие повторено');
-                try {
-                    if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-                        tg.HapticFeedback.impactOccurred('light');
-                    }
-                } catch (error) {
-                    // Игнорируем ошибки тактильной отдачи
-                }
+        function clearCanvas() {
+            if (confirm('Очистить холст?')) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBackground();
+                saveState();
+                showNotification('Холст очищен');
             }
         }
 
@@ -1060,13 +829,6 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
             showNotification('Сохранено как PNG');
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-            } catch (error) {
-                // Игнорируем ошибки тактильной отдачи
-            }
         }
 
         function saveAsJPG() {
@@ -1075,252 +837,17 @@
             link.href = canvas.toDataURL('image/jpeg', 0.9);
             link.click();
             showNotification('Сохранено как JPG');
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-            } catch (error) {
-                // Игнорируем ошибки тактильной отдачи
-            }
-        }
-
-        async function copyToClipboard() {
-            try {
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                showNotification('Скопировано в буфер обмена');
-                try {
-                    if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                } catch (error) {
-                    // Игнорируем ошибки тактильной отдачи
-                }
-            } catch (err) {
-                showNotification('Ошибка копирования');
-            }
-        }
-
-        function shareDrawing() {
-            canvas.toBlob(function(blob) {
-                if (navigator.share) {
-                    navigator.share({
-                        files: [new File([blob], 'мой-рисунок.png', { type: 'image/png' })],
-                        title: 'Мой рисунок',
-                        text: 'Посмотрите что я нарисовал!'
-                    });
-                } else {
-                    saveAsPNG();
-                }
-            });
-        }
-
-        // Совместное рисование - ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МОДУЛЬ
-        function initCollaboration() {
-            try {
-                // Используем BroadcastChannel для современной связи между вкладками
-                if (typeof BroadcastChannel !== 'undefined') {
-                    collabChannel = new BroadcastChannel('paint_messenger_collab');
-                    collabChannel.addEventListener('message', handleCollabMessage);
-                    console.log('✅ BroadcastChannel инициализирован');
-                } else {
-                    // Fallback на localStorage для старых браузеров
-                    window.addEventListener('storage', handleStorageEvent);
-                    console.log('✅ Используем localStorage для совместной работы');
-                }
-                
-                // Периодическая проверка соединения
-                setInterval(checkCollabStatus, 3000);
-                
-            } catch (error) {
-                console.error('Ошибка инициализации совместной работы:', error);
-                showNotification('Совместное рисование временно недоступно');
-            }
-        }
-
-        function handleCollabMessage(e) {
-            const data = e.data;
-            if (data && data.type === 'drawing' && data.sessionId === currentSession && data.sender !== instanceId) {
-                replayDrawing(data);
-            } else if (data && data.type === 'join' && data.sessionId === currentSession) {
-                updateUsersList(2);
-            }
-        }
-
-        function handleStorageEvent(e) {
-            if (e.key === 'paint_collab' && currentSession) {
-                try {
-                    const data = JSON.parse(e.newValue);
-                    if (data.sessionId === currentSession && data.type === 'drawing' && data.sender !== instanceId) {
-                        replayDrawing(data);
-                    }
-                } catch (err) {
-                    console.error('Ошибка обработки данных:', err);
-                }
-            }
-        }
-
-        function broadcastDrawingData() {
-            if (!currentSession) return;
-            
-            const drawingData = {
-                sessionId: currentSession,
-                type: 'drawing',
-                tool: currentTool,
-                color: currentColor,
-                brushSize: brushSize,
-                coordinates: { startX, startY, lastX, lastY },
-                sender: instanceId,
-                timestamp: Date.now()
-            };
-            
-            try {
-                if (collabChannel) {
-                    collabChannel.postMessage(drawingData);
-                } else {
-                    // Fallback на localStorage
-                    localStorage.setItem('paint_collab', JSON.stringify(drawingData));
-                }
-            } catch (err) {
-                console.error('Ошибка отправки данных:', err);
-            }
-        }
-
-        function replayDrawing(data) {
-            // Сохраняем текущие настройки
-            const originalStrokeStyle = ctx.strokeStyle;
-            const originalLineWidth = ctx.lineWidth;
-            const originalGlobalCompositeOperation = ctx.globalCompositeOperation;
-            
-            // Устанавливаем настройки из данных
-            ctx.strokeStyle = data.color;
-            ctx.lineWidth = data.brushSize;
-            ctx.globalCompositeOperation = data.tool === 'eraser' ? 'destination-out' : 'source-over';
-            
-            // Воспроизводим рисование
-            if (data.tool === 'brush' || data.tool === 'eraser') {
-                ctx.beginPath();
-                ctx.moveTo(data.coordinates.startX, data.coordinates.startY);
-                ctx.lineTo(data.coordinates.lastX, data.coordinates.lastY);
-                ctx.stroke();
-            } else if (data.tool === 'line') {
-                ctx.beginPath();
-                ctx.moveTo(data.coordinates.startX, data.coordinates.startY);
-                ctx.lineTo(data.coordinates.lastX, data.coordinates.lastY);
-                ctx.stroke();
-            } else if (data.tool === 'rect') {
-                ctx.strokeRect(
-                    data.coordinates.startX, 
-                    data.coordinates.startY, 
-                    data.coordinates.lastX - data.coordinates.startX, 
-                    data.coordinates.lastY - data.coordinates.startY
-                );
-            } else if (data.tool === 'circle') {
-                const radius = Math.sqrt(
-                    Math.pow(data.coordinates.lastX - data.coordinates.startX, 2) + 
-                    Math.pow(data.coordinates.lastY - data.coordinates.startY, 2)
-                );
-                ctx.beginPath();
-                ctx.arc(data.coordinates.startX, data.coordinates.startY, radius, 0, 2 * Math.PI);
-                ctx.stroke();
-            }
-            
-            // Восстанавливаем настройки
-            ctx.strokeStyle = originalStrokeStyle;
-            ctx.lineWidth = originalLineWidth;
-            ctx.globalCompositeOperation = originalGlobalCompositeOperation;
-        }
-
-        function startCollaboration() {
-            currentSession = 'session_' + Date.now();
-            document.getElementById('sessionId').value = currentSession;
-            showNotification('Сессия создана! Поделитесь ID');
-            updateUsersList(1);
-            
-            // Сохраняем сессию для восстановления
-            localStorage.setItem('paint_session', currentSession);
-        }
-
-        function joinCollaboration() {
-            const sessionId = document.getElementById('joinSessionId').value.trim();
-            if (sessionId) {
-                currentSession = sessionId;
-                showNotification('Присоединились к сессии');
-                updateUsersList(2);
-                
-                // Сохраняем сессию для восстановления
-                localStorage.setItem('paint_session', currentSession);
-                
-                // Уведомляем других участников
-                if (collabChannel) {
-                    collabChannel.postMessage({
-                        sessionId: currentSession,
-                        type: 'join',
-                        sender: instanceId
-                    });
-                }
-                
-                closeCollabPanel();
-            } else {
-                showNotification('Введите ID сессии');
-            }
-        }
-
-        function copySessionId() {
-            const sessionId = document.getElementById('sessionId').value;
-            navigator.clipboard.writeText(sessionId).then(() => {
-                showNotification('ID скопирован');
-            });
-        }
-
-        function updateUsersList(count) {
-            document.getElementById('usersList').textContent = `Участники: ${count}`;
-        }
-
-        function checkCollabStatus() {
-            if (currentSession) {
-                // Проверяем активность сессии
-                const savedSession = localStorage.getItem('paint_session');
-                if (savedSession !== currentSession) {
-                    // Сессия устарела
-                    currentSession = null;
-                    updateUsersList(1);
-                    showNotification('Сессия завершена');
-                }
-            }
         }
 
         // Управление интерфейсом
         function openMenu() {
             document.getElementById('menuOverlay').classList.add('active');
             document.getElementById('menuPanel').classList.add('active');
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
-            } catch (error) {
-                // Игнорируем ошибки тактильной отдачи
-            }
         }
 
         function closeMenu() {
             document.getElementById('menuOverlay').classList.remove('active');
             document.getElementById('menuPanel').classList.remove('active');
-        }
-
-        function openCollabPanel() {
-            document.getElementById('collabPanel').classList.add('active');
-            try {
-                if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
-            } catch (error) {
-                // Игнорируем ошибки тактильной отдачи
-            }
-        }
-
-        function closeCollabPanel() {
-            document.getElementById('collabPanel').classList.remove('active');
         }
 
         function initTools() {
@@ -1341,35 +868,15 @@
         }
 
         function showNotification(message, duration = 2000) {
-            try {
-                const notification = document.getElementById('notification');
-                const text = document.getElementById('notificationText');
-                
-                if (!notification || !text) {
-                    console.log('Notification:', message);
-                    return;
-                }
-                
-                text.textContent = message;
-                notification.classList.remove('hide');
-                notification.classList.add('show');
-                
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                    notification.classList.add('hide');
-                }, duration);
-                
-                // Тактильная отдача с проверкой ошибок
-                try {
-                    if (tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                } catch (error) {
-                    // Игнорируем ошибки тактильной отдачи
-                }
-            } catch (error) {
-                console.log('Notification error:', error, message);
-            }
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            
+            text.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
         }
 
         // Глобальные горячие клавиши
@@ -1380,16 +887,11 @@
                         e.preventDefault();
                         undo();
                         break;
-                    case 'y':
-                        e.preventDefault();
-                        redo();
-                        break;
                 }
             }
             
             if (e.key === 'Escape') {
                 closeMenu();
-                closeCollabPanel();
             }
         });
 
@@ -1399,28 +901,8 @@
             showNotification('Произошла ошибка');
         });
 
-        window.addEventListener('unhandledrejection', (e) => {
-            console.error('Необработанное обещание:', e.reason);
-            showNotification('Произошла ошибка');
-        });
-
-        // Восстановление сессии при загрузке
-        function restoreSession() {
-            const savedSession = localStorage.getItem('paint_session');
-            if (savedSession) {
-                currentSession = savedSession;
-                document.getElementById('sessionId').value = currentSession;
-                updateUsersList(1);
-                showNotification('Сессия восстановлена');
-            }
-        }
-
         // Запуск приложения
-        document.addEventListener('DOMContentLoaded', () => {
-            initApp();
-            initCollaboration();
-            restoreSession();
-        });
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
