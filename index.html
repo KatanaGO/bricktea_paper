@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickDraw Messenger</title>
+    <title>Simple Paint</title>
     <style>
         * {
             margin: 0;
@@ -14,274 +14,245 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
+            background: #2c3e50;
             overflow: hidden;
             height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .app {
+            width: 100%;
+            max-width: 800px;
+            height: 100vh;
+            max-height: 1000px;
+            background: white;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            max-width: 100%;
-            margin: 0 auto;
-            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
         }
 
         /* Header */
         .header {
-            padding: 12px 16px;
-            background: #4285f4;
+            padding: 15px 20px;
+            background: #3498db;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .header-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
         }
 
         .header-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .header-btn {
-            padding: 8px 12px;
+            padding: 8px 15px;
             background: rgba(255,255,255,0.2);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 14px;
         }
 
-        /* Canvas */
-        .canvas-area {
+        /* Main Content */
+        .main-content {
             flex: 1;
-            position: relative;
+            display: flex;
             overflow: hidden;
-            background: #f8f9fa;
         }
 
-        #drawingCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-        }
-
-        /* Tools */
-        .tools-panel {
-            padding: 12px 16px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
+        /* Tools Sidebar */
+        .tools-sidebar {
+            width: 80px;
+            background: #34495e;
+            padding: 20px 10px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .tool-group {
-            display: flex;
-            gap: 4px;
-            padding: 4px;
-            background: #f5f5f5;
-            border-radius: 8px;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .tool-btn {
-            padding: 8px 12px;
+            width: 60px;
+            height: 60px;
+            background: #2c3e50;
             border: none;
-            background: none;
-            border-radius: 6px;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
             cursor: pointer;
-            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.2s;
         }
 
         .tool-btn.active {
-            background: #4285f4;
+            background: #3498db;
+            transform: scale(1.1);
+        }
+
+        .tool-btn:hover {
+            background: #3498db;
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            flex: 1;
+            background: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        #mainCanvas {
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            cursor: crosshair;
+        }
+
+        /* Properties Panel */
+        .properties-panel {
+            width: 250px;
+            background: #34495e;
+            padding: 20px;
             color: white;
+        }
+
+        .property-group {
+            margin-bottom: 25px;
+        }
+
+        .property-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #bdc3c7;
         }
 
         .color-palette {
             display: flex;
-            gap: 4px;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
-        .color-btn {
-            width: 32px;
-            height: 32px;
-            border: 2px solid transparent;
+        .color-option {
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
         }
 
-        .color-btn.active {
-            border-color: #333;
-            transform: scale(1.1);
+        .color-option.active {
+            transform: scale(1.2);
+            border-color: white;
         }
 
         .size-control {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .size-btn {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #ddd;
-            border-radius: 50%;
-            background: #333;
-            cursor: pointer;
-        }
-
-        .size-btn.small { transform: scale(0.7); }
-        .size-btn.medium { transform: scale(1); }
-        .size-btn.large { transform: scale(1.3); }
-
-        .size-btn.active {
-            border-color: #4285f4;
-        }
-
-        /* Background selector */
-        .background-selector {
+        .size-option {
             display: flex;
-            gap: 4px;
-        }
-
-        .bg-btn {
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
             padding: 8px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .size-option:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .size-option.active {
+            background: rgba(52, 152, 219, 0.3);
+        }
+
+        .size-preview {
+            border-radius: 50%;
             background: white;
-            cursor: pointer;
-            font-size: 14px;
         }
 
-        .bg-btn.active {
-            border-color: #4285f4;
-            background: #4285f4;
-            color: white;
-        }
-
-        /* Actions */
-        .actions-panel {
-            padding: 12px 16px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            gap: 8px;
-            justify-content: space-between;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            background: #4285f4;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .action-btn.secondary {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 90%;
-            width: 400px;
-            max-height: 80%;
-            overflow-y: auto;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 20px;
-        }
-
-        /* Share options */
-        .share-options {
+        .background-options {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .share-option {
-            padding: 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+        .background-option {
+            padding: 12px;
+            background: #2c3e50;
+            border: none;
+            border-radius: 5px;
+            color: white;
             cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .background-option.active {
+            background: #3498db;
+        }
+
+        .background-option:hover {
+            background: #3498db;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 15px 20px;
+            background: #3498db;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.2s;
+            gap: 8px;
         }
 
-        .share-option:hover {
-            border-color: #4285f4;
-            background: #f8f9fe;
-        }
-
-        .share-icon {
-            font-size: 24px;
+        .footer-btn:hover {
+            background: rgba(255,255,255,0.3);
         }
 
         /* Notification */
         .notification {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: #333;
+            background: #2ecc71;
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 5px;
             font-size: 14px;
-            z-index: 2000;
+            z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -291,18 +262,31 @@
         }
 
         /* Responsive */
-        @media (max-width: 480px) {
-            .tools-panel {
+        @media (max-width: 768px) {
+            .main-content {
                 flex-direction: column;
-                align-items: stretch;
             }
             
-            .tool-group {
-                justify-content: center;
+            .tools-sidebar {
+                width: 100%;
+                height: 80px;
+                flex-direction: row;
+                padding: 10px;
             }
             
-            .actions-panel {
-                flex-direction: column;
+            .tool-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .properties-panel {
+                width: 100%;
+                height: auto;
+            }
+            
+            .property-group {
+                margin-bottom: 15px;
             }
         }
     </style>
@@ -311,21 +295,17 @@
     <div class="app">
         <!-- Header -->
         <div class="header">
-            <div class="header-title">QuickDraw Messenger</div>
+            <div class="header-title">🎨 Simple Paint</div>
             <div class="header-actions">
-                <button class="header-btn" id="clearBtn">Очистить</button>
-                <button class="header-btn" id="undoBtn">Назад</button>
+                <button class="header-btn" id="undoBtn">↶ Отмена</button>
+                <button class="header-btn" id="clearBtn">🗑️ Очистить</button>
             </div>
         </div>
 
-        <!-- Canvas Area -->
-        <div class="canvas-area">
-            <canvas id="drawingCanvas"></canvas>
-        </div>
-
-        <!-- Tools Panel -->
-        <div class="tools-panel">
-            <div class="tool-group">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Tools Sidebar -->
+            <div class="tools-sidebar">
                 <button class="tool-btn active" data-tool="brush" title="Кисть">🖌️</button>
                 <button class="tool-btn" data-tool="eraser" title="Ластик">🧹</button>
                 <button class="tool-btn" data-tool="line" title="Линия">📏</button>
@@ -333,69 +313,64 @@
                 <button class="tool-btn" data-tool="circle" title="Круг">⭕</button>
             </div>
 
-            <div class="color-palette">
-                <div class="color-btn active" style="background: #000000;" data-color="#000000"></div>
-                <div class="color-btn" style="background: #ff3b30;" data-color="#ff3b30"></div>
-                <div class="color-btn" style="background: #4cd964;" data-color="#4cd964"></div>
-                <div class="color-btn" style="background: #007aff;" data-color="#007aff"></div>
-                <div class="color-btn" style="background: #5856d6;" data-color="#5856d6"></div>
-                <div class="color-btn" style="background: #ff9500;" data-color="#ff9500"></div>
+            <!-- Canvas -->
+            <div class="canvas-container">
+                <canvas id="mainCanvas"></canvas>
             </div>
 
-            <div class="size-control">
-                <div class="size-btn small active" data-size="2"></div>
-                <div class="size-btn medium" data-size="5"></div>
-                <div class="size-btn large" data-size="10"></div>
-            </div>
+            <!-- Properties Panel -->
+            <div class="properties-panel">
+                <div class="property-group">
+                    <div class="property-title">ЦВЕТ</div>
+                    <div class="color-palette">
+                        <div class="color-option active" style="background: #000000;" data-color="#000000"></div>
+                        <div class="color-option" style="background: #e74c3c;" data-color="#e74c3c"></div>
+                        <div class="color-option" style="background: #2ecc71;" data-color="#2ecc71"></div>
+                        <div class="color-option" style="background: #3498db;" data-color="#3498db"></div>
+                        <div class="color-option" style="background: #9b59b6;" data-color="#9b59b6"></div>
+                        <div class="color-option" style="background: #f1c40f;" data-color="#f1c40f"></div>
+                        <div class="color-option" style="background: #e67e22;" data-color="#e67e22"></div>
+                        <div class="color-option" style="background: #1abc9c;" data-color="#1abc9c"></div>
+                    </div>
+                </div>
 
-            <div class="background-selector">
-                <button class="bg-btn active" data-bg="white">Белый</button>
-                <button class="bg-btn" data-bg="grid">Сетка</button>
-                <button class="bg-btn" data-bg="lined">Линовка</button>
+                <div class="property-group">
+                    <div class="property-title">РАЗМЕР</div>
+                    <div class="size-control">
+                        <div class="size-option active" data-size="2">
+                            <div class="size-preview" style="width: 8px; height: 8px;"></div>
+                            <span>Тонкий</span>
+                        </div>
+                        <div class="size-option" data-size="5">
+                            <div class="size-preview" style="width: 16px; height: 16px;"></div>
+                            <span>Средний</span>
+                        </div>
+                        <div class="size-option" data-size="10">
+                            <div class="size-preview" style="width: 24px; height: 24px;"></div>
+                            <span>Толстый</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <div class="property-title">ФОН</div>
+                    <div class="background-options">
+                        <button class="background-option active" data-background="white">Белый фон</button>
+                        <button class="background-option" data-background="grid">Сетка</button>
+                        <button class="background-option" data-background="transparent">Прозрачный</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Actions Panel -->
-        <div class="actions-panel">
-            <button class="action-btn secondary" id="saveBtn">
-                💾 Сохранить
+        <!-- Footer -->
+        <div class="footer">
+            <button class="footer-btn" id="saveBtn">
+                💾 Сохранить PNG
             </button>
-            <button class="action-btn" id="shareBtn">
+            <button class="footer-btn" id="shareBtn">
                 📤 Поделиться
             </button>
-        </div>
-
-        <!-- Share Modal -->
-        <div class="modal" id="shareModal">
-            <div class="modal-content">
-                <div class="modal-title">Поделиться рисунком</div>
-                <div class="share-options">
-                    <div class="share-option" data-action="download">
-                        <div class="share-icon">💾</div>
-                        <div>
-                            <div class="share-title">Скачать изображение</div>
-                            <div class="share-desc">Сохранить PNG на устройство</div>
-                        </div>
-                    </div>
-                    <div class="share-option" data-action="copy">
-                        <div class="share-icon">📋</div>
-                        <div>
-                            <div class="share-title">Копировать в буфер</div>
-                            <div class="share-desc">Скопировать изображение для вставки</div>
-                        </div>
-                    </div>
-                    <div class="share-option" data-action="telegram">
-                        <div class="share-icon">📱</div>
-                        <div>
-                            <div class="share-title">Отправить в Telegram</div>
-                            <div class="share-desc">Поделиться через Telegram</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="action-btn secondary" id="closeShareModal">Отмена</button>
-                </div>
-            </div>
         </div>
 
         <!-- Notification -->
@@ -403,53 +378,53 @@
     </div>
 
     <script>
-        // Основные переменные
-        let canvas, ctx;
-        let isDrawing = false;
-        let lastX = 0, lastY = 0;
-        let startX = 0, startY = 0;
-        let currentTool = 'brush';
-        let currentColor = '#000000';
-        let currentSize = 2;
-        let currentBackground = 'white';
-        let savedImageData = null;
+        // Глобальные переменные
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
         
-        // История действий
-        let history = [];
-        let historyIndex = -1;
+        // Состояние приложения
+        const state = {
+            isDrawing: false,
+            lastX: 0,
+            lastY: 0,
+            startX: 0,
+            startY: 0,
+            currentTool: 'brush',
+            currentColor: '#000000',
+            currentSize: 2,
+            currentBackground: 'white',
+            savedImage: null,
+            history: [],
+            historyIndex: -1
+        };
 
-        // Инициализация приложения
+        // Инициализация
         function init() {
-            console.log('🎨 Инициализация QuickDraw Messenger...');
-            
-            // Инициализация canvas
-            canvas = document.getElementById('drawingCanvas');
-            ctx = canvas.getContext('2d');
+            console.log('🎨 Инициализация Simple Paint...');
             
             setupCanvas();
             setupEventListeners();
             setupBackground();
             saveState();
             
-            console.log('✅ Приложение готово!');
-            showNotification('QuickDraw Messenger загружен!');
+            showNotification('Simple Paint готов к работе!');
         }
 
         function setupCanvas() {
             // Установка размеров canvas
             const container = canvas.parentElement;
-            const rect = container.getBoundingClientRect();
+            const size = Math.min(container.clientWidth, container.clientHeight) - 40;
             
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            canvas.width = size;
+            canvas.height = size;
             
-            // Настройка стилей рисования
+            // Настройка контекста
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
-            ctx.lineWidth = currentSize;
-            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = state.currentSize;
+            ctx.strokeStyle = state.currentColor;
             
-            console.log('📐 Canvas настроен:', canvas.width, 'x', canvas.height);
+            console.log(`📐 Canvas: ${canvas.width}x${canvas.height}`);
         }
 
         function setupEventListeners() {
@@ -467,47 +442,42 @@
             // Инструменты
             document.querySelectorAll('.tool-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    selectTool(e.target.closest('.tool-btn').dataset.tool);
+                    const tool = e.currentTarget.dataset.tool;
+                    setTool(tool);
                 });
             });
             
             // Цвета
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    selectColor(e.target.closest('.color-btn').dataset.color);
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    const color = e.currentTarget.dataset.color;
+                    setColor(color);
                 });
             });
             
             // Размеры
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    selectSize(parseInt(e.target.closest('.size-btn').dataset.size));
+            document.querySelectorAll('.size-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    const size = parseInt(e.currentTarget.dataset.size);
+                    setSize(size);
                 });
             });
             
             // Фоны
-            document.querySelectorAll('.bg-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    selectBackground(e.target.closest('.bg-btn').dataset.bg);
-                });
-            });
-            
-            // Действия
-            document.getElementById('clearBtn').addEventListener('click', clearCanvas);
-            document.getElementById('undoBtn').addEventListener('click', undo);
-            document.getElementById('saveBtn').addEventListener('click', saveImage);
-            document.getElementById('shareBtn').addEventListener('click', openShareModal);
-            document.getElementById('closeShareModal').addEventListener('click', closeShareModal);
-            
-            // Опции шаринга
-            document.querySelectorAll('.share-option').forEach(option => {
+            document.querySelectorAll('.background-option').forEach(option => {
                 option.addEventListener('click', (e) => {
-                    const action = e.target.closest('.share-option').dataset.action;
-                    handleShareAction(action);
+                    const background = e.currentTarget.dataset.background;
+                    setBackground(background);
                 });
             });
             
-            // Обработка изменения размера окна
+            // Кнопки действий
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+            document.getElementById('saveBtn').addEventListener('click', saveAsPNG);
+            document.getElementById('shareBtn').addEventListener('click', shareDrawing);
+            
+            // Адаптация к изменению размера окна
             window.addEventListener('resize', debounce(setupCanvas, 250));
         }
 
@@ -533,50 +503,53 @@
 
         function getCanvasCoordinates(e) {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
             return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
             };
         }
 
         function startDrawing(e) {
-            isDrawing = true;
+            state.isDrawing = true;
             const coords = getCanvasCoordinates(e);
-            [lastX, lastY] = [coords.x, coords.y];
-            [startX, startY] = [coords.x, coords.y];
             
-            if (['line', 'rect', 'circle'].includes(currentTool)) {
-                savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state.lastX = coords.x;
+            state.lastY = coords.y;
+            state.startX = coords.x;
+            state.startY = coords.y;
+            
+            // Сохраняем состояние для фигур
+            if (['line', 'rect', 'circle'].includes(state.currentTool)) {
+                state.savedImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
             }
             
-            if (currentTool === 'brush' || currentTool === 'eraser') {
+            // Начинаем путь для кисти и ластика
+            if (state.currentTool === 'brush' || state.currentTool === 'eraser') {
                 ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
+                ctx.moveTo(state.lastX, state.lastY);
             }
         }
 
         function draw(e) {
-            if (!isDrawing) return;
+            if (!state.isDrawing) return;
             
             const coords = getCanvasCoordinates(e);
             const currentX = coords.x;
             const currentY = coords.y;
             
-            // Настройка стиля в зависимости от инструмента
-            if (currentTool === 'eraser') {
+            // Настройка стиля
+            if (state.currentTool === 'eraser') {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.strokeStyle = 'rgba(0,0,0,1)';
             } else {
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = currentColor;
+                ctx.strokeStyle = state.currentColor;
             }
             
-            ctx.lineWidth = currentSize;
+            ctx.lineWidth = state.currentSize;
             
-            switch(currentTool) {
+            // Рисование в зависимости от инструмента
+            switch(state.currentTool) {
                 case 'brush':
                 case 'eraser':
                     ctx.lineTo(currentX, currentY);
@@ -584,45 +557,57 @@
                     break;
                     
                 case 'line':
-                    ctx.putImageData(savedImageData, 0, 0);
+                    // Восстанавливаем изображение и рисуем линию
+                    ctx.putImageData(state.savedImage, 0, 0);
                     ctx.beginPath();
-                    ctx.moveTo(startX, startY);
+                    ctx.moveTo(state.startX, state.startY);
                     ctx.lineTo(currentX, currentY);
                     ctx.stroke();
                     break;
                     
                 case 'rect':
-                    ctx.putImageData(savedImageData, 0, 0);
-                    ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+                    ctx.putImageData(state.savedImage, 0, 0);
+                    ctx.strokeRect(
+                        state.startX, 
+                        state.startY, 
+                        currentX - state.startX, 
+                        currentY - state.startY
+                    );
                     break;
                     
                 case 'circle':
-                    ctx.putImageData(savedImageData, 0, 0);
-                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                    ctx.putImageData(state.savedImage, 0, 0);
+                    const radius = Math.sqrt(
+                        Math.pow(currentX - state.startX, 2) + 
+                        Math.pow(currentY - state.startY, 2)
+                    );
                     ctx.beginPath();
-                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                    ctx.arc(state.startX, state.startY, radius, 0, 2 * Math.PI);
                     ctx.stroke();
                     break;
             }
             
-            [lastX, lastY] = [currentX, currentY];
+            state.lastX = currentX;
+            state.lastY = currentY;
         }
 
         function stopDrawing() {
-            if (isDrawing) {
-                isDrawing = false;
-                ctx.globalCompositeOperation = 'source-over';
+            if (state.isDrawing) {
+                state.isDrawing = false;
                 
-                if (currentTool !== 'brush') {
+                // Сохраняем состояние после завершения рисования
+                if (state.currentTool !== 'brush') {
                     saveState();
                 }
                 
-                savedImageData = null;
+                // Сбрасываем настройки
+                ctx.globalCompositeOperation = 'source-over';
+                state.savedImage = null;
             }
         }
 
-        function selectTool(tool) {
-            currentTool = tool;
+        function setTool(tool) {
+            state.currentTool = tool;
             
             // Обновление UI
             document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -633,52 +618,51 @@
             showNotification(`Инструмент: ${getToolName(tool)}`);
         }
 
-        function selectColor(color) {
-            currentColor = color;
+        function setColor(color) {
+            state.currentColor = color;
+            ctx.strokeStyle = color;
             
             // Обновление UI
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                btn.classList.remove('active');
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('active');
             });
             document.querySelector(`[data-color="${color}"]`).classList.add('active');
-            
-            ctx.strokeStyle = color;
         }
 
-        function selectSize(size) {
-            currentSize = size;
+        function setSize(size) {
+            state.currentSize = size;
+            ctx.lineWidth = size;
             
             // Обновление UI
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.classList.remove('active');
+            document.querySelectorAll('.size-option').forEach(option => {
+                option.classList.remove('active');
             });
             document.querySelector(`[data-size="${size}"]`).classList.add('active');
-            
-            ctx.lineWidth = size;
         }
 
-        function selectBackground(bg) {
-            currentBackground = bg;
+        function setBackground(background) {
+            state.currentBackground = background;
             
             // Обновление UI
-            document.querySelectorAll('.bg-btn').forEach(btn => {
-                btn.classList.remove('active');
+            document.querySelectorAll('.background-option').forEach(option => {
+                option.classList.remove('active');
             });
-            document.querySelector(`[data-bg="${bg}"]`).classList.add('active');
+            document.querySelector(`[data-background="${background}"]`).classList.add('active');
             
-            setupBackground();
-            saveState();
+            drawBackground();
+            restoreDrawing();
         }
 
-        function setupBackground() {
+        function drawBackground() {
             // Сохраняем текущий рисунок
-            const currentDrawing = history.length > 0 ? history[historyIndex] : null;
+            const currentDrawing = state.history.length > 0 ? 
+                state.history[state.historyIndex] : null;
             
             // Очищаем canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Устанавливаем фон
-            switch(currentBackground) {
+            // Рисуем фон
+            switch(state.currentBackground) {
                 case 'white':
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -688,8 +672,9 @@
                     drawGridBackground();
                     break;
                     
-                case 'lined':
-                    drawLinedBackground();
+                case 'transparent':
+                    // Для прозрачного фона ничего не рисуем
+                    drawTransparentBackground();
                     break;
             }
             
@@ -727,23 +712,21 @@
             }
         }
 
-        function drawLinedBackground() {
-            // Белый фон
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function drawTransparentBackground() {
+            // Шахматный фон для прозрачности
+            const size = 10;
+            ctx.fillStyle = '#f0f0f0';
             
-            // Линовка
-            ctx.strokeStyle = '#87CEEB';
-            ctx.lineWidth = 1;
-            
-            const lineSpacing = 24;
-            
-            for (let y = lineSpacing; y < canvas.height; y += lineSpacing) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
+            for (let x = 0; x < canvas.width; x += size * 2) {
+                for (let y = 0; y < canvas.height; y += size * 2) {
+                    ctx.fillRect(x, y, size, size);
+                    ctx.fillRect(x + size, y + size, size, size);
+                }
             }
+        }
+
+        function setupBackground() {
+            drawBackground();
         }
 
         function getToolName(tool) {
@@ -759,108 +742,77 @@
 
         // История действий
         function saveState() {
-            const state = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
             // Обрезаем историю если нужно
-            if (historyIndex < history.length - 1) {
-                history = history.slice(0, historyIndex + 1);
+            if (state.historyIndex < state.history.length - 1) {
+                state.history = state.history.slice(0, state.historyIndex + 1);
             }
             
-            history.push(state);
-            historyIndex++;
+            state.history.push(imageData);
+            state.historyIndex++;
             
             // Ограничиваем размер истории
-            if (history.length > 50) {
-                history.shift();
-                historyIndex--;
+            if (state.history.length > 20) {
+                state.history.shift();
+                state.historyIndex--;
             }
         }
 
-        function restoreState() {
-            if (historyIndex >= 0) {
-                const state = history[historyIndex];
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                setupBackground();
-                ctx.putImageData(state, 0, 0);
-            } else {
-                // Если история пуста, просто очищаем canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                setupBackground();
+        function restoreDrawing() {
+            if (state.historyIndex >= 0) {
+                const imageData = state.history[state.historyIndex];
+                ctx.putImageData(imageData, 0, 0);
             }
         }
 
         function undo() {
-            if (historyIndex > 0) {
-                historyIndex--;
-                restoreState();
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                drawBackground();
+                restoreDrawing();
                 showNotification('Действие отменено');
-            } else if (historyIndex === 0) {
-                historyIndex = -1;
-                restoreState();
+            } else if (state.historyIndex === 0) {
+                state.historyIndex = -1;
+                drawBackground();
                 showNotification('Действие отменено');
             }
         }
 
         function clearCanvas() {
             if (confirm('Очистить холст? Все несохраненные изменения будут потеряны.')) {
-                historyIndex = -1;
-                history = [];
-                restoreState();
+                state.historyIndex = -1;
+                state.history = [];
+                drawBackground();
                 showNotification('Холст очищен');
             }
         }
 
-        // Сохранение и шаринг
-        function saveImage() {
+        // Сохранение и экспорт
+        function saveAsPNG() {
             const link = document.createElement('a');
-            link.download = `quickdraw-${Date.now()}.png`;
+            link.download = `drawing-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            showNotification('Изображение сохранено');
+            showNotification('Изображение сохранено как PNG');
         }
 
-        function openShareModal() {
-            document.getElementById('shareModal').classList.add('active');
-        }
-
-        function closeShareModal() {
-            document.getElementById('shareModal').classList.remove('active');
-        }
-
-        function handleShareAction(action) {
-            switch(action) {
-                case 'download':
-                    saveImage();
-                    break;
-                    
-                case 'copy':
-                    copyToClipboard();
-                    break;
-                    
-                case 'telegram':
-                    shareToTelegram();
-                    break;
+        function shareDrawing() {
+            if (navigator.share) {
+                canvas.toBlob(function(blob) {
+                    navigator.share({
+                        files: [new File([blob], 'мой-рисунок.png', { type: 'image/png' })],
+                        title: 'Мой рисунок',
+                        text: 'Посмотрите что я нарисовал!'
+                    }).then(() => {
+                        showNotification('Рисунок успешно отправлен!');
+                    }).catch(() => {
+                        saveAsPNG();
+                    });
+                });
+            } else {
+                saveAsPNG();
             }
-            
-            closeShareModal();
-        }
-
-        async function copyToClipboard() {
-            try {
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                showNotification('Изображение скопировано в буфер');
-            } catch (err) {
-                showNotification('Ошибка копирования');
-                console.error('Copy error:', err);
-            }
-        }
-
-        function shareToTelegram() {
-            // В реальном приложении здесь будет интеграция с Telegram API
-            // Для демо просто сохраняем изображение
-            saveImage();
-            showNotification('Функция Telegram будет доступна в полной версии');
         }
 
         // Утилиты
